@@ -1,0 +1,17 @@
+# Gerado inicialmente como mockup. Deve ser populado com pip freeze após o setup do ambiente Colab real.
+deepeval==4.0.5
+transformers
+accelerate
+datasets==5.0.0
+trl==1.5.1
+peft==0.19.1
+bitsandbytes
+torch
+numpy
+pandas
+pyyaml
+tqdm
+pytest
+sqlparse
+safetensors
+sentencepiece

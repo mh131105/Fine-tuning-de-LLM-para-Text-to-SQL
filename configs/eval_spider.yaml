@@ -1,0 +1,21 @@
+evaluation:
+  split: "dev"
+  batch_size: 1
+  limit: null
+  timeout_seconds: 30
+  output_dir: "outputs/baseline"
+
+fewshot:
+  source_split: "train"
+  example_ids:
+    - "train_0001"
+    - "train_0100"
+    - "train_0250"
+
+generation:
+  max_new_tokens: 256
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+  num_beams: 1
+  repetition_penalty: 1.0

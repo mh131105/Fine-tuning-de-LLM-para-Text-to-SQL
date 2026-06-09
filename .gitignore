@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data and Outputs
+data/raw/
+data/processed/
+outputs/
+
+# Virtual Environment
+venv/
+env/
+.env
+
+# Config Overrides
+configs/local_*.yaml
+
+# macOS
+.DS_Store

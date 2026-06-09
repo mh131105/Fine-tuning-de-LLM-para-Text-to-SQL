@@ -1,0 +1,8 @@
+data:
+  spider:
+    raw_dir: "data/raw/spider"
+    processed_dir: "data/processed"
+    train_file: "train_spider.json"
+    dev_file: "dev.json"
+    tables_file: "tables.json"
+    database_dir: "database"

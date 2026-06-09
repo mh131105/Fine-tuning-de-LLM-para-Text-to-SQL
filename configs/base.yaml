@@ -1,0 +1,4 @@
+base:
+  project_root: "."
+  output_dir: "outputs"
+  seed: 42

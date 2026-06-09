@@ -1,0 +1,22 @@
+mmlu:
+  dataset_name: "cais/mmlu"
+  total_questions: 150
+  seed: 42
+  shots: 5
+  categories:
+    stem:
+      subcategory: "college_computer_science"
+      eval_count: 50
+    humanities:
+      subcategory: "philosophy"
+      eval_count: 50
+    social_sciences:
+      subcategory: "econometrics"
+      eval_count: 50
+
+generation:
+  max_new_tokens: 8
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+  num_beams: 1

@@ -1,0 +1,8 @@
+model:
+  name: "Qwen/Qwen2.5-Coder-3B-Instruct"
+  trust_remote_code: true
+  torch_dtype: "auto"
+  load_in_4bit: true
+  device_map: "auto"
+  use_chat_template_if_available: true
+  pad_token_policy: "use_eos_if_missing"
