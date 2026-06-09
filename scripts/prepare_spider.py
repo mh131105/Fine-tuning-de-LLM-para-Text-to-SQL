@@ -1,127 +1,120 @@
 import argparse
 import json
-import os
+import sqlite3
 import sys
-import hashlib
+from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.config import load_config
-from src.spider_schema import load_tables_json, serialize_schema
-from src.prompts import render_prompt
+# Adiciona o diretório raiz ao path para permitir imports do src
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-def validate_examples(examples, db_dir):
-    valid = []
-    invalid = []
-    for ex in examples:
-        db_id = ex.get('db_id')
-        sql = ex.get('query')
-        if not db_id or not sql:
-            invalid.append(ex)
+from src.data import save_json, save_jsonl, spider_rows_to_examples
+
+def _load_json(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+def _validate_databases(data_dir: Path, db_ids: Any) -> None:
+    """Verifica se os arquivos .sqlite físicos existem no diretório raw."""
+    missing = []
+    for db_id in db_ids:
+        db_path = data_dir / "database" / db_id / f"{db_id}.sqlite"
+        if not db_path.exists():
+            missing.append(db_id)
             continue
-        
-        # Verify db file
-        db_path = os.path.join(db_dir, db_id, f"{db_id}.sqlite")
-        if not os.path.exists(db_path):
-            invalid.append(ex)
-            continue
+        # Tenta conectar no modo read-only para garantir que não está corrompido
+        connection = sqlite3.connect(f"file:{db_path.resolve()}?mode=ro", uri=True)
+        connection.close()
+    if missing:
+        raise FileNotFoundError(f"Databases SQLite ausentes para db_id(s): {', '.join(sorted(missing))}")
+
+def _convert_schema(raw: dict[str, Any]) -> dict[str, Any]:
+    """
+    O coração do processamento: Normaliza o JSON confuso do Spider em estruturas 
+    relacionais limpas (TableSchema, ColumnSchema, ForeignKey).
+    """
+    db_id = raw["db_id"]
+    table_names = raw.get("table_names_original") or raw.get("table_names")
+    column_names = raw.get("column_names_original") or raw.get("column_names")
+    column_types = raw.get("column_types") or []
+    primary_key_indices = set(raw.get("primary_keys") or [])
+
+    tables: list[dict[str, Any]] = []
+    for table_index, table_name in enumerate(table_names):
+        columns = []
+        primary_keys = []
+        for column_index, column_entry in enumerate(column_names):
+            source_table_index, column_name = column_entry
+            if source_table_index != table_index:
+                continue
             
-        valid.append(ex)
-    return valid, invalid
+            is_primary = column_index in primary_key_indices
+            if is_primary:
+                primary_keys.append(column_name)
+                
+            columns.append({
+                "name": column_name,
+                "type": column_types[column_index] if column_index < len(column_types) else None,
+                "is_primary_key": is_primary,
+            })
+        tables.append({"name": table_name, "columns": columns, "primary_keys": primary_keys})
 
-def prepare_split(config_path: str, split: str, limit: int = None):
-    config, _ = load_config(config_path, ["data"])
-    data_cfg = config["data"]["spider"]
-    
-    raw_dir = data_cfg["raw_dir"]
-    processed_dir = data_cfg["processed_dir"]
-    tables_path = os.path.join(raw_dir, data_cfg["tables_file"])
-    db_dir = os.path.join(raw_dir, data_cfg["database_dir"])
-    
-    os.makedirs(processed_dir, exist_ok=True)
-    
-    if split == "train":
-        input_file = os.path.join(raw_dir, data_cfg["train_file"])
-        output_file = os.path.join(processed_dir, "spider_train.jsonl")
-    elif split == "dev":
-        input_file = os.path.join(raw_dir, data_cfg["dev_file"])
-        output_file = os.path.join(processed_dir, "spider_dev_eval.jsonl")
-    else:
-        raise ValueError(f"Unknown split: {split}")
-        
-    if not os.path.exists(input_file):
-        # Allow it to run as a stub if raw data is missing, to satisfy tests
-        print(f"Warning: {input_file} not found. Creating empty output.")
-        with open(output_file, 'w') as f:
-            pass
+    foreign_keys = []
+    for source_index, target_index in raw.get("foreign_keys") or []:
+        source_table_index, source_column = column_names[source_index]
+        target_table_index, target_column = column_names[target_index]
+        if source_table_index >= 0 and target_table_index >= 0:
+            foreign_keys.append({
+                "source_table": table_names[source_table_index],
+                "source_column": source_column,
+                "target_table": table_names[target_table_index],
+                "target_column": target_column,
+            })
+
+    return {"db_id": db_id, "tables": tables, "foreign_keys": foreign_keys}
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Prepare Spider train/dev splits and schemas.")
+    parser.add_argument("--data_dir", default="data/raw/spider")
+    parser.add_argument("--output_dir", default="data/processed/spider")
+    # Argumentos extras caso o notebook original passe flags como --config e --split
+    parser.add_argument("--config", default="", help="Config (opcional)")
+    parser.add_argument("--split", default="", help="Split (opcional)")
+    args = parser.parse_args()
+
+    data_dir = Path(args.data_dir)
+    output_dir = Path(args.output_dir)
+
+    # 1. Carrega os dados brutos
+    try:
+        train_rows = _load_json(data_dir / "train_spider.json")
+        dev_rows = _load_json(data_dir / "dev.json")
+        table_rows = _load_json(data_dir / "tables.json")
+    except FileNotFoundError as e:
+        print(f"Aviso: {e}. O processamento foi abortado pois os dados não estão presentes.")
         return
-        
-    with open(input_file, 'r', encoding='utf-8') as f:
-        examples = json.load(f)
-        
-    if limit:
-        examples = examples[:limit]
-        
-    valid_examples, invalid_examples = validate_examples(examples, db_dir)
+
+    # 2. Converte as perguntas/queries para os moldes limpos
+    train_examples = spider_rows_to_examples(train_rows, "train")
+    dev_examples = spider_rows_to_examples(dev_rows, "dev")
     
-    schema_map = load_tables_json(tables_path)
+    # 3. Converte as bizarrices do table.json para schemas de banco de dados reais
+    schemas = {_schema["db_id"]: _schema for _schema in (_convert_schema(row) for row in table_rows)}
     
-    processed_lines = []
-    for ex in valid_examples:
-        db_id = ex['db_id']
-        question = ex['question']
-        gold_sql = ex['query']
-        
-        schema_str = serialize_schema(schema_map, db_id)
-        prompt = render_prompt(schema_str, question)
-        
-        # For training, we prepare 'messages' for chat template
-        if split == "train":
-            record = {
-                "messages": [
-                    {"role": "user", "content": prompt},
-                    {"role": "assistant", "content": gold_sql}
-                ],
-                "db_id": db_id,
-                "question": question,
-                "gold_sql": gold_sql
-            }
-        else: # For eval
-            record = {
-                "prompt": prompt,
-                "db_id": db_id,
-                "question": question,
-                "gold_sql": gold_sql,
-                "db_path": os.path.join(db_dir, db_id, f"{db_id}.sqlite")
-            }
-            
-        processed_lines.append(json.dumps(record))
-        
-    dataset_content = "\n".join(processed_lines)
-    dataset_hash = hashlib.sha256(dataset_content.encode('utf-8')).hexdigest()
-    
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(dataset_content + "\n")
-        
-    # Save validation report
-    with open(os.path.join(processed_dir, f"data_validation_report_{split}.json"), 'w') as f:
-        json.dump({
-            "split": split,
-            "total_raw": len(examples),
-            "valid": len(valid_examples),
-            "invalid": len(invalid_examples),
-            "dataset_hash": dataset_hash
-        }, f, indent=2)
-        
-    # audit de split dev - nunca pode estar no train
-    if split == "dev":
-        with open(os.path.join(processed_dir, "split_audit.json"), 'w') as f:
-            json.dump({"dev_hash": dataset_hash}, f)
+    # 4. Valida se os bancos de dados batem
+    try:
+        _validate_databases(data_dir, schemas.keys())
+    except FileNotFoundError as e:
+        print(f"Aviso: {e}")
+        print("Continuando processamento sem bases de dados locais...")
+
+    # 5. Salva na pasta final
+    output_dir.mkdir(parents=True, exist_ok=True)
+    save_jsonl(output_dir / "train.jsonl", train_examples)
+    save_jsonl(output_dir / "dev.jsonl", dev_examples)
+    save_json(output_dir / "schemas.json", schemas)
+
+    print(f"Preparados {len(train_examples)} exemplos de treino e {len(dev_examples)} de validação.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True)
-    parser.add_argument("--split", choices=["train", "dev"], required=True)
-    parser.add_argument("--limit", type=int, default=None)
-    args = parser.parse_args()
-    
-    prepare_split(args.config, args.split, args.limit)
+    main()
