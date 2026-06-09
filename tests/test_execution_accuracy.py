@@ -1,58 +1,59 @@
-import pytest
-from deepeval.test_case import LLMTestCase
-import os
 import sqlite3
-import sys
+from types import SimpleNamespace
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from custom_metrics.execution_accuracy import ExecutionAccuracyMetric
+from custom_metrics.execution_accuracy import ExecutionAccuracy
 
-@pytest.fixture
-def setup_db(tmp_path):
-    db_path = tmp_path / "test.sqlite"
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE users (id INTEGER, name TEXT);")
-    cursor.execute("INSERT INTO users VALUES (1, 'Alice');")
-    cursor.execute("INSERT INTO users VALUES (2, 'Bob');")
+
+def _db(tmp_path):
+    path = tmp_path / "toy.sqlite"
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE users (id INTEGER, name TEXT)")
+    conn.executemany("INSERT INTO users VALUES (?, ?)", [(1, "Alice"), (2, "Bob")])
     conn.commit()
     conn.close()
-    return str(db_path)
+    return path
 
-def test_execution_accuracy_correct(setup_db):
-    test_case = LLMTestCase(
-        input="Get all users",
-        actual_output="SELECT * FROM users",
-        expected_output="SELECT id, name FROM users",
-        additional_metadata={"db_path": setup_db}
+
+def _case(db_path, actual, expected):
+    return SimpleNamespace(
+        input="question",
+        actual_output=actual,
+        expected_output=expected,
+        additional_metadata={"db_path": str(db_path)},
     )
-    metric = ExecutionAccuracyMetric()
-    score = metric.measure(test_case)
+
+
+def test_execution_accuracy_correct_sql(tmp_path):
+    metric = ExecutionAccuracy()
+    score = metric.measure(_case(_db(tmp_path), "SELECT id, name FROM users", "SELECT * FROM users"))
     assert score == 1.0
     assert metric.is_successful()
     assert metric.reason == "SUCCESS"
 
-def test_execution_accuracy_mismatch(setup_db):
-    test_case = LLMTestCase(
-        input="Get Alice",
-        actual_output="SELECT * FROM users",
-        expected_output="SELECT * FROM users WHERE name='Alice'",
-        additional_metadata={"db_path": setup_db}
+
+def test_execution_accuracy_extracts_markdown(tmp_path):
+    metric = ExecutionAccuracy()
+    raw = "Here is the SQL:\n```sql\nSELECT name FROM users;\n```\nDone."
+    score = metric.measure(_case(_db(tmp_path), raw, "SELECT name FROM users"))
+    assert score == 1.0
+    assert metric.predicted_sql == "SELECT name FROM users;"
+
+
+def test_execution_accuracy_order_mismatch(tmp_path):
+    metric = ExecutionAccuracy()
+    score = metric.measure(
+        _case(
+            _db(tmp_path),
+            "SELECT name FROM users ORDER BY name DESC",
+            "SELECT name FROM users ORDER BY name ASC",
+        )
     )
-    metric = ExecutionAccuracyMetric()
-    score = metric.measure(test_case)
     assert score == 0.0
-    assert not metric.is_successful()
     assert metric.reason == "RESULT_MISMATCH"
 
-def test_execution_accuracy_syntax_error(setup_db):
-    test_case = LLMTestCase(
-        input="Get all users",
-        actual_output="SELECT * FROM users WHERE",
-        expected_output="SELECT * FROM users",
-        additional_metadata={"db_path": setup_db}
-    )
-    metric = ExecutionAccuracyMetric()
-    score = metric.measure(test_case)
+
+def test_execution_accuracy_bad_column(tmp_path):
+    metric = ExecutionAccuracy()
+    score = metric.measure(_case(_db(tmp_path), "SELECT missing FROM users", "SELECT name FROM users"))
     assert score == 0.0
-    assert metric.reason == "SQL_SYNTAX_ERROR"
+    assert metric.error_type == "execution_error"

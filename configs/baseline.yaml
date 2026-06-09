@@ -1,0 +1,17 @@
+experiment_name: base
+seed: 42
+
+paths:
+  output_dir: outputs/base
+  model_cache_dir: .cache/huggingface
+
+model:
+  name: Qwen/Qwen2.5-3B-Instruct
+  profile: l4
+  device_map: auto
+  attn_implementation: sdpa
+
+generation:
+  temperature: 0.0
+  do_sample: false
+  max_new_tokens: 256

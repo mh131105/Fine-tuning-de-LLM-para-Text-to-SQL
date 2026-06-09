@@ -1,19 +1,27 @@
 __pycache__/
 *.py[cod]
-*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
 
-# Data and Outputs
-data/raw/
-data/processed/
-outputs/
-
-# Virtual Environment
+.env
+.venv/
 venv/
 env/
-.env
+.ipynb_checkpoints/
 
-# Config Overrides
-configs/local_*.yaml
+.cache/
+models/
+wandb/
+*.log
 
-# macOS
-.DS_Store
+data/raw/*
+data/processed/*
+!data/README.md
+
+outputs/*
+!outputs/README.md
+
+*.sqlite-shm
+*.sqlite-wal

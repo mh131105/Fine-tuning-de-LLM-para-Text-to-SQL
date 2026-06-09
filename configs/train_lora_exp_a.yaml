@@ -1,0 +1,44 @@
+experiment_name: exp_a
+seed: 42
+
+paths:
+  data_dir: data/processed/spider
+  output_dir: outputs/exp_a
+  model_cache_dir: .cache/huggingface
+
+model:
+  name: Qwen/Qwen2.5-3B-Instruct
+  profile: l4
+  device_map: auto
+  attn_implementation: sdpa
+
+training:
+  method: lora
+  learning_rate: 1.0e-4
+  num_train_epochs: 1
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  max_seq_length: 4096
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  logging_steps: 10
+  save_strategy: epoch
+  bf16: true
+  fp16: false
+  gradient_checkpointing: false
+  report_to: none
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+  bias: none
+  task_type: CAUSAL_LM
+
+generation_eval:
+  temperature: 0.0
+  do_sample: false
+  max_new_tokens: 256

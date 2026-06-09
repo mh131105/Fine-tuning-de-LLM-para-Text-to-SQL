@@ -1,44 +1,174 @@
-# TP2 NLP - Text-to-SQL Fine-Tuning & Evaluation Pipeline
+# TP2 NLP - Fine-Tuning Text-to-SQL
 
-## 1. Visão Geral e Objetivo
-Este projeto implementa um pipeline completo e reprodutível para avaliar a viabilidade de realizar o *fine-tuning supervisionado* de um modelo pequeno com foco em programação (**Qwen/Qwen2.5-Coder-3B-Instruct**) para a tarefa avançada de Text-to-SQL (usando a base **Spider**). O objetivo central é medir se os ganhos de performance nessa tarefa de domínio específico geram "catastrophic forgetting" ou regressões nas suas capacidades genéricas de conhecimento, testadas via **MMLU**.
+Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA/QLoRA do `Qwen/Qwen2.5-3B-Instruct`.
 
-## 2. Arquitetura do Sistema
-O projeto é estruturado em uma pipeline de dados e avaliação composta por 5 componentes principais:
+O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos fixos. Treino e inferencia reais baixam modelo grande e devem ser executados por voce em GPU.
 
-- **Camada de Configuração (`configs/`)**: Arquivos YAML que parametrizam toda a execução (dados, hiperparâmetros do modelo, treino e logs de avaliação).
-- **Camada de Scripts (`scripts/`)**: Orquestram os fluxos do começo ao fim (preparação do dataset, fine-tuning via QLoRA, avaliação Spider/MMLU e agregação de dados).
-- **Core (`src/`)**: Fornece módulos reutilizáveis, como o carregamento seguro do LLM com quantização de 4-bits, rotinas de geração determinística, construção de prompts e serialização do schema do SQLite.
-- **Métricas Customizadas (`custom_metrics/`)**: Implementa a `ExecutionAccuracyMetric` (baseada no framework *DeepEval*). A métrica faz parsing do output gerado, ignorando markdown extra, e roda a SQL predita *read-only* contra o banco de dados SQLite oficial, pontuando matches reais ao invés de usar similaridade semântica insegura.
-- **Testes (`tests/`)**: Garante, por meio do `pytest`, que o parsing de schemas, cálculos de acurácia, extratores de SQL e travas de reprodutibilidade estejam puras e asserindo os formatos corretamente.
+## O que o projeto faz
 
-### Fluxo de Processamento
-1. **Preparo**: Conversão dos schemas do SQLite via JSON do Spider -> Construção de Chat Messages TRL -> Exportação final `spider_train_sft.jsonl`.
-2. **Treino**: `train_qlora.py` aplica as otimizações PEFT/QLoRA sobre o modelo quantizado.
-3. **Avaliação Spider**: Geração inferencial no Spider Dev; extração rigorosa de sintaxe SQL e execução virtual local no SQLite.
-4. **Avaliação MMLU**: Geração e parsing A/B/C/D sobre o dataset de conhecimentos gerais (baseline e fine-tuned adapters).
-5. **Relatório**: Agregação dos deltas comparativos em tabelas finais `.csv` e `.md`.
+- prepara Spider train/dev e schemas de bancos SQLite;
+- prepara uma suite fixa de MMLU com 150 questoes;
+- avalia modelo base em Spider dev por Execution Accuracy;
+- treina dois experimentos LoRA/QLoRA no Spider train;
+- avalia modelos fine-tuned em Spider dev e MMLU;
+- calcula ganho no Spider e variacao no MMLU contra baseline;
+- salva predicoes JSONL, metricas JSON, logs, ambiente e summaries Markdown;
+- inclui testes unitarios, testes com mocks e smoke tests leves.
 
-## 3. Plano Experimental
-Os experimentos foram modelados para aferir as variações de proficiência do modelo sob diferentes cargas e hiperparâmetros PEFT:
+## Estrutura
 
-- **Baseline**: Qwen2.5-Coder-3B-Instruct avaliado "vanilla" (sem peso alterado). 3-shot prompt com DDL no Spider, e 5-shot prompt no MMLU.
-- **Experimento A (QLoRA Focado)**: Fine-tuning apenas nos módulos de atenção principais (`q_proj`, `v_proj`).
-  - *Parâmetros*: `r=16`, `lora_alpha=16`, `learning_rate=2e-4`.
-  - *Hipótese*: Aprendizado eficiente da relação coluna/entidade sem afetar pesos latentes base.
-- **Experimento B (QLoRA Amplo)**: Fine-tuning em maior número de camadas (atenção e feed-forward, como `gate_proj`, `up_proj`, `down_proj`).
-  - *Parâmetros*: `r=32`, `lora_alpha=32`, `learning_rate=1e-4`.
-  - *Hipótese*: Aumento expressivo em Text-to-SQL, mas maior risco de esquecimento e perda de capacidade generalista refletida em queda na MMLU Accuracy.
+```text
+configs/             YAMLs de treino e avaliacao
+custom_metrics/      ExecutionAccuracy compativel com DeepEval
+scripts/             CLIs publicas
+src/tp2/             logica principal
+tests/               unitarios e smoke tests com mocks
+notebooks/           runner Colab sem logica exclusiva
+data/                dados locais ignorados pelo Git
+outputs/             resultados locais ignorados pelo Git
+reports/             notas para o relatorio final
+```
 
-As **métricas principais** extraídas e avaliadas cruzando essas 3 fases são: *Execution Accuracy* (acerto de banco relacional), *Invalid SQL Rate* (syntax errors da IA), e *MMLU Accuracy* (impacto cognitivo genérico).
+## Instalacao
 
-## 4. Garantias de Reprodutibilidade
-O projeto e seus scripts são empacotados visando robustez científica sem viés ou variância invisível:
+Recomendado: Python 3.10 a 3.12 no Colab.
 
-- **Variáveis Determinísticas e Sementes**: Modificações centralizadas sob YAML. Sementes para inicialização `torch`, `numpy.random` e `random` são travadas e injetadas sistemicamente pelo módulo `src/reproducibility.py`.
-- **Identificação com Hashes**: As rotinas emitem e comparam meta-dados de run sob chaves MD5/SHA256 (`config_hash`) das flags aplicadas.
-- **Ambiente Tracker**: A captação do OS, pacote GPU, memórias VRAM, CUDA e locks das bibliotecas ficam retidas nos outputs das métricas.
-- **Execução Real**: Testes empíricos (SQL Execution) ignoram alinhamentos visuais e forçam computação idêntica ao banco esperado.
-- **Ponto de Partida**: Um caderno único `notebooks/00_setup_colab.ipynb` agrupa e consolida desde instalações a downloads em Colab.
+```bash
+pip install -r requirements.txt
+```
 
-Para utilizar, instale os componentes de `requirements.txt` e inicie o pipeline pelo Jupyter Notebook base de provisionamento.
+Se o Colab ja tiver `torch`/CUDA instalados, voce pode manter a versao do ambiente e reinstalar as demais bibliotecas manualmente, mas o caminho reproduzivel padrao e o `requirements.txt`.
+
+## Dados
+
+Coloque o Spider bruto em:
+
+```text
+data/raw/spider/
+├── train_spider.json
+├── dev.json
+├── tables.json
+└── database/<db_id>/<db_id>.sqlite
+```
+
+O MMLU e baixado via Hugging Face Datasets por `scripts.prepare_mmlu`.
+
+## Comandos principais
+
+Preparar Spider:
+
+```bash
+python -m scripts.prepare_spider --data_dir data/raw/spider --output_dir data/processed/spider
+```
+
+Preparar MMLU 150:
+
+```bash
+python -m scripts.prepare_mmlu --config configs/eval.yaml
+```
+
+Treinar Experimento A:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_a.yaml
+```
+
+Treinar Experimento B:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_b.yaml
+```
+
+Avaliar baseline:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
+```
+
+Avaliar Exp A:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_a
+```
+
+Avaliar Exp B:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
+```
+
+## Smoke tests sem modelo grande
+
+Esses comandos nao baixam Qwen nem treinam LoRA.
+
+```bash
+python -m pytest
+python -m scripts.prepare_mmlu --config configs/eval.yaml --mock --limit_per_category 2
+```
+
+Tambem existe `--mock` nos avaliadores para testes locais de formato:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base --mock --limit 2
+```
+
+Esse modo usa as respostas gold como saida do "modelo" e serve apenas para validar IO, metricas e summaries.
+
+## Configuracoes
+
+- `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica e SQLite timeout.
+- `configs/train_lora_exp_a.yaml`: LoRA conservador, LR `1e-4`, 1 epoca.
+- `configs/train_lora_exp_b.yaml`: LoRA mais agressivo, LR `2e-4`, 2 epocas.
+- `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
+
+Todas as configs usam paths relativos.
+
+## Artefatos esperados
+
+Depois de cada benchmark:
+
+```text
+outputs/<exp>/
+├── environment.json
+├── spider_predictions.jsonl
+├── spider_metrics.json
+├── mmlu_predictions.jsonl
+├── mmlu_metrics.json
+├── benchmark_summary.json
+└── summary.md
+```
+
+Depois de cada treino:
+
+```text
+outputs/<exp>/
+├── adapter/
+├── tokenizer/
+├── training_config.yaml
+├── train_logs.json
+├── dataset_preview.json
+└── environment.json
+```
+
+## Metrica Spider
+
+`custom_metrics.ExecutionAccuracy` herda de `deepeval.metrics.BaseMetric` quando DeepEval esta instalado. A metrica:
+
+- extrai SQL de markdown e texto extra;
+- aceita apenas `SELECT` ou `WITH`;
+- bloqueia comandos destrutivos;
+- executa SQL prevista e gold no SQLite em modo read-only;
+- compara resultados ignorando ordem quando nao ha `ORDER BY`;
+- preserva ordem quando ha `ORDER BY`;
+- retorna `1.0` ou `0.0` e registra `error_type`.
+
+## Colab
+
+Abra `notebooks/colab_runner.ipynb`. O notebook apenas clona/entra no repositorio, instala dependencias e executa os comandos acima. A logica fica nos modulos e scripts do repositorio.
+
+## Observacoes operacionais
+
+- Nao commite `data/raw`, `data/processed`, `outputs`, tokens ou `.env`.
+- Use `HF_TOKEN` no ambiente se o Hugging Face Hub exigir autenticacao.
+- A avaliacao final deve usar Spider dev completo e MMLU 150 completo.
+- O treino real depende de GPU, VRAM, download do modelo e datasets completos.
