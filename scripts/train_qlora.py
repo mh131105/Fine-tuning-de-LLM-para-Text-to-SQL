@@ -9,30 +9,44 @@ from src.config import load_config
 from src.model_loader import load_model_and_tokenizer
 from src.metrics_io import save_metrics, log_event
 
+from datasets import load_dataset
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import TrainingArguments
+from trl import SFTTrainer
+
 def train(config_path: str, max_steps: int = None):
+    # Load configs
     base_cfg, _ = load_config("configs/base.yaml", ["base"])
     train_cfg, config_hash = load_config(config_path, ["train", "lora", "qlora"])
     model_cfg, _ = load_config("configs/model.yaml", ["model"])
-    data_cfg, _ = load_config("configs/data.yaml", ["data"])
     
     output_dir = train_cfg["train"]["output_dir"]
     os.makedirs(output_dir, exist_ok=True)
     
+    # Save resolved config
     resolved_config = {
         "train": train_cfg["train"],
         "lora": train_cfg["lora"],
         "qlora": train_cfg["qlora"],
-        "model": model_cfg["model"],
-        "data": data_cfg["data"]
+        "model": model_cfg["model"]
     }
     with open(os.path.join(output_dir, 'training_config_resolved.json'), 'w') as f:
         json.dump(resolved_config, f, indent=2)
         
-    start_time = time.time()
-    print(f"Training using config: {config_path}")
-    print("Mocking training process for environment setup...")
+    print(f"Starting QLoRA fine-tuning using config: {config_path}")
     
-    from peft import LoraConfig
+    # Load dataset
+    dataset_path = "data/processed/spider_train_sft.jsonl"
+    if not os.path.exists(dataset_path):
+        raise FileNotFoundError(f"{dataset_path} not found. Run prepare_spider.py first.")
+        
+    dataset = load_dataset("json", data_files=dataset_path, split="train")
+    
+    # Load Model and Tokenizer
+    model, tokenizer = load_model_and_tokenizer(model_cfg, adapter_path=None)
+    model.config.use_cache = False
+    
+    # LoRA Config
     lora_config = LoraConfig(
         r=train_cfg["lora"]["r"],
         lora_alpha=train_cfg["lora"]["alpha"],
@@ -42,24 +56,61 @@ def train(config_path: str, max_steps: int = None):
         task_type=train_cfg["lora"]["task_type"]
     )
     
-    adapter_dir = os.path.join(output_dir, "adapters")
-    os.makedirs(adapter_dir, exist_ok=True)
-    
-    with open(os.path.join(adapter_dir, 'adapter_config.json'), 'w') as f:
-        json.dump(lora_config.to_dict(), f, indent=2)
+    # Enable gradient checkpointing for VRAM savings
+    if train_cfg["train"].get("gradient_checkpointing", True):
+        model.gradient_checkpointing_enable()
         
+    model = prepare_model_for_kbit_training(model)
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+    
+    # Training Arguments
+    t_cfg = train_cfg["train"]
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        per_device_train_batch_size=t_cfg.get("per_device_train_batch_size", 4),
+        gradient_accumulation_steps=t_cfg.get("gradient_accumulation_steps", 2),
+        learning_rate=t_cfg.get("learning_rate", 2e-4),
+        num_train_epochs=t_cfg.get("num_train_epochs", 1),
+        warmup_ratio=t_cfg.get("warmup_ratio", 0.03),
+        weight_decay=t_cfg.get("weight_decay", 0.0),
+        logging_steps=t_cfg.get("logging_steps", 10),
+        save_strategy=t_cfg.get("save_strategy", "epoch"),
+        bf16=t_cfg.get("bf16", True),
+        fp16=t_cfg.get("fp16", False),
+        optim=t_cfg.get("optim", "paged_adamw_8bit"),
+        max_steps=max_steps if max_steps else -1,
+        report_to="none"
+    )
+    
+    # Trainer
+    trainer = SFTTrainer(
+        model=model,
+        train_dataset=dataset,
+        peft_config=lora_config,
+        dataset_text_field="text",
+        max_seq_length=t_cfg.get("max_seq_length", 2048),
+        tokenizer=tokenizer,
+        args=training_args,
+    )
+    
+    start_time = time.time()
+    trainer.train()
     end_time = time.time()
     
+    # Save adapter
+    adapter_dir = os.path.join(output_dir, "adapters")
+    trainer.model.save_pretrained(adapter_dir)
+    tokenizer.save_pretrained(adapter_dir)
+    
     metrics = {
-        "train_loss": 0.5,
         "training_runtime_seconds": end_time - start_time,
-        "peak_gpu_memory_mb": 4500,
-        "tokens_per_second": 120,
-        "num_train_epochs": train_cfg["train"]["num_train_epochs"]
+        "num_train_epochs": t_cfg.get("num_train_epochs", 1)
     }
     save_metrics(output_dir, "train_metrics.json", metrics)
     log_event("train_qlora", metrics, config_hash)
-    
+    print("Training complete! Adapters saved.")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
