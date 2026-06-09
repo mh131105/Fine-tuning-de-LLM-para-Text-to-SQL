@@ -28,20 +28,34 @@ def evaluate(config_path: str, adapter_path: str = None, output_dir: str = None,
     combined_cfg = {"model": model_cfg["model"]}
     model, tokenizer = load_model_and_tokenizer(combined_cfg, adapter_path)
     
-    # Read eval data
-    split = eval_cfg["evaluation"]["split"]
-    processed_dir = data_cfg["data"]["spider"]["processed_dir"]
-    eval_file = os.path.join(processed_dir, f"spider_{split}_eval.jsonl")
+    # Read eval data using new custom data layer
+    from src.data import load_spider_dev, load_spider_schemas
+    from src.spider_schema import serialize_schema
+    from src.prompts import render_prompt
     
-    if not os.path.exists(eval_file):
-        print(f"Eval file not found: {eval_file}")
+    split = eval_cfg["evaluation"]["split"]
+    if split != "dev":
+        print(f"Warning: split is {split}, fallback to dev.")
+    
+    try:
+        raw_dev = load_spider_dev("data/processed/spider")
+        schemas = load_spider_schemas("data/processed/spider")
+    except Exception as e:
+        print(f"Eval file not found: {e}")
         return
         
     examples = []
-    with open(eval_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            if line.strip():
-                examples.append(json.loads(line))
+    for ex in raw_dev:
+        schema_dict = schemas.get(ex["db_id"])
+        schema_str = serialize_schema(schema_dict) if schema_dict else ""
+        prompt = render_prompt(schema_str, ex["question"])
+        examples.append({
+            "db_id": ex["db_id"],
+            "question": ex["question"],
+            "prompt": prompt,
+            "gold_sql": ex["query"],
+            "db_path": f"data/raw/spider/database/{ex['db_id']}/{ex['db_id']}.sqlite"
+        })
                 
     if limit is None:
         limit = eval_cfg["evaluation"].get("limit")

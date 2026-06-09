@@ -35,12 +35,26 @@ def train(config_path: str, max_steps: int = None):
         
     print(f"Starting QLoRA fine-tuning using config: {config_path}")
     
-    # Load dataset
-    dataset_path = "data/processed/spider_train_sft.jsonl"
-    if not os.path.exists(dataset_path):
-        raise FileNotFoundError(f"{dataset_path} not found. Run prepare_spider.py first.")
+    # Load dataset using our custom data layer
+    from src.data import load_spider_train, load_spider_schemas
+    from src.spider_schema import serialize_schema
+    from src.prompts import render_prompt
+    from datasets import Dataset
+    
+    try:
+        raw_train = load_spider_train("data/processed/spider")
+        schemas = load_spider_schemas("data/processed/spider")
+    except Exception as e:
+        raise FileNotFoundError(f"Failed to load data: {e}. Run prepare_spider.py first.")
         
-    dataset = load_dataset("json", data_files=dataset_path, split="train")
+    formatted_data = []
+    for ex in raw_train:
+        schema_dict = schemas.get(ex["db_id"])
+        schema_str = serialize_schema(schema_dict) if schema_dict else ""
+        prompt = render_prompt(schema_str, ex["question"])
+        formatted_data.append({"text": prompt + ex["query"]})
+        
+    dataset = Dataset.from_list(formatted_data)
     
     # Load Model and Tokenizer
     model, tokenizer = load_model_and_tokenizer(model_cfg, adapter_path=None)
