@@ -17,20 +17,29 @@ from .data import (
     save_jsonl,
     serialize_schema,
 )
-from .inference import extract_mmlu_answer, generate_text
+from .inference import extract_mmlu_answer, generate_text_batch
 from .logging_utils import save_environment_snapshot, write_summary_markdown
 from .model import load_for_inference
 from .prompts import build_mmlu_prompt, build_spider_prompt, prompt_hash
 from .reproducibility import set_global_seed
 
 
-def _progress(items: list[dict[str, Any]], desc: str, unit: str = "example"):
+def _eval_batch_size(section_cfg: dict[str, Any]) -> int:
+    return max(1, int(section_cfg.get("eval_batch_size", section_cfg.get("batch_size", 1))))
+
+
+def _progress_batches(items: list[dict[str, Any]], batch_size: int, desc: str, unit: str = "example"):
     try:
         from tqdm.auto import tqdm
 
-        return tqdm(items, desc=desc, total=len(items), unit=unit, dynamic_ncols=True)
+        with tqdm(total=len(items), desc=desc, unit=unit, dynamic_ncols=True) as progress:
+            for start in range(0, len(items), batch_size):
+                batch = items[start : start + batch_size]
+                yield batch
+                progress.update(len(batch))
     except Exception:
-        return items
+        for start in range(0, len(items), batch_size):
+            yield items[start : start + batch_size]
 
 
 def _load_model_for_eval(config: dict[str, Any], model_path: str | Path | None, mock: bool):
@@ -93,44 +102,49 @@ def evaluate_spider(
     correct = 0
     failed = 0
     error_breakdown: dict[str, int] = {}
+    batch_size = _eval_batch_size(spider_cfg)
 
-    for example in _progress(dev_examples, "Spider eval"):
-        schema = schemas.get(example["db_id"], {"db_id": example["db_id"], "tables": [], "foreign_keys": []})
-        schema_text = serialize_schema(schema)
-        prompt = build_spider_prompt(example, schema_text, few_shot)
+    for batch in _progress_batches(dev_examples, batch_size, f"Spider eval (bs={batch_size})"):
+        prompts = []
+        for example in batch:
+            schema = schemas.get(example["db_id"], {"db_id": example["db_id"], "tables": [], "foreign_keys": []})
+            schema_text = serialize_schema(schema)
+            prompts.append(build_spider_prompt(example, schema_text, few_shot))
         if mock:
-            raw_output = example.get("mock_output") or example.get("gold_sql") or example.get("query")
-            latency = 0.0
+            raw_outputs = [example.get("mock_output") or example.get("gold_sql") or example.get("query") for example in batch]
+            latencies = [0.0] * len(batch)
         else:
-            raw_output, latency = generate_text(model, tokenizer, prompt, generation_cfg)
-        test_case = SimpleNamespace(
-            input=example["question"],
-            actual_output=raw_output,
-            expected_output=example.get("gold_sql") or example.get("query"),
-            additional_metadata={"db_id": example["db_id"]},
-        )
-        score = metric.measure(test_case)
-        if score >= 1.0:
-            correct += 1
-        else:
-            failed += 1
-            error_type = metric.error_type or "unknown_error"
-            error_breakdown[error_type] = error_breakdown.get(error_type, 0) + 1
-        predictions.append(
-            {
-                "example_id": example["example_id"],
-                "db_id": example["db_id"],
-                "question": example["question"],
-                "prompt_hash": prompt_hash(prompt),
-                "gold_sql": example.get("gold_sql") or example.get("query"),
-                "raw_output": raw_output,
-                "predicted_sql": metric.predicted_sql,
-                "score": score,
-                "error_type": metric.error_type,
-                "error_message": metric.error_message,
-                "latency_seconds": latency,
-            }
-        )
+            raw_outputs, latencies = generate_text_batch(model, tokenizer, prompts, generation_cfg)
+
+        for example, prompt, raw_output, latency in zip(batch, prompts, raw_outputs, latencies):
+            test_case = SimpleNamespace(
+                input=example["question"],
+                actual_output=raw_output,
+                expected_output=example.get("gold_sql") or example.get("query"),
+                additional_metadata={"db_id": example["db_id"]},
+            )
+            score = metric.measure(test_case)
+            if score >= 1.0:
+                correct += 1
+            else:
+                failed += 1
+                error_type = metric.error_type or "unknown_error"
+                error_breakdown[error_type] = error_breakdown.get(error_type, 0) + 1
+            predictions.append(
+                {
+                    "example_id": example["example_id"],
+                    "db_id": example["db_id"],
+                    "question": example["question"],
+                    "prompt_hash": prompt_hash(prompt),
+                    "gold_sql": example.get("gold_sql") or example.get("query"),
+                    "raw_output": raw_output,
+                    "predicted_sql": metric.predicted_sql,
+                    "score": score,
+                    "error_type": metric.error_type,
+                    "error_message": metric.error_message,
+                    "latency_seconds": latency,
+                }
+            )
 
     total = len(dev_examples)
     metrics = {
@@ -177,35 +191,41 @@ def evaluate_mmlu(
     predictions: list[dict[str, Any]] = []
     correct = 0
     by_category: dict[str, dict[str, Any]] = {}
-    for question in _progress(questions, "MMLU eval", unit="question"):
-        category = question["category"]
-        by_category.setdefault(category, {"total": 0, "correct": 0, "accuracy": 0.0})
-        by_category[category]["total"] += 1
-        prompt = build_mmlu_prompt(question, _mmlu_shots(question, few_shot_examples, int(mmlu_cfg.get("few_shot_count", 5))))
+    batch_size = _eval_batch_size(mmlu_cfg)
+    for batch in _progress_batches(questions, batch_size, f"MMLU eval (bs={batch_size})", unit="question"):
+        prompts = [
+            build_mmlu_prompt(question, _mmlu_shots(question, few_shot_examples, int(mmlu_cfg.get("few_shot_count", 5))))
+            for question in batch
+        ]
         if mock:
-            raw_output = question["answer"]
-            latency = 0.0
+            raw_outputs = [question["answer"] for question in batch]
+            latencies = [0.0] * len(batch)
         else:
-            raw_output, latency = generate_text(model, tokenizer, prompt, generation_cfg)
-        parsed = extract_mmlu_answer(raw_output)
-        is_correct = parsed == question["answer"]
-        if is_correct:
-            correct += 1
-            by_category[category]["correct"] += 1
-        predictions.append(
-            {
-                "question_id": question["question_id"],
-                "category": category,
-                "subcategory": question["subcategory"],
-                "raw_output": raw_output,
-                "parsed_answer": parsed,
-                "gold_answer": question["answer"],
-                "is_correct": is_correct,
-                "error_type": None if parsed else "mmlu_parse_error",
-                "latency_seconds": latency,
-                "prompt_hash": prompt_hash(prompt),
-            }
-        )
+            raw_outputs, latencies = generate_text_batch(model, tokenizer, prompts, generation_cfg)
+
+        for question, prompt, raw_output, latency in zip(batch, prompts, raw_outputs, latencies):
+            category = question["category"]
+            by_category.setdefault(category, {"total": 0, "correct": 0, "accuracy": 0.0})
+            by_category[category]["total"] += 1
+            parsed = extract_mmlu_answer(raw_output)
+            is_correct = parsed == question["answer"]
+            if is_correct:
+                correct += 1
+                by_category[category]["correct"] += 1
+            predictions.append(
+                {
+                    "question_id": question["question_id"],
+                    "category": category,
+                    "subcategory": question["subcategory"],
+                    "raw_output": raw_output,
+                    "parsed_answer": parsed,
+                    "gold_answer": question["answer"],
+                    "is_correct": is_correct,
+                    "error_type": None if parsed else "mmlu_parse_error",
+                    "latency_seconds": latency,
+                    "prompt_hash": prompt_hash(prompt),
+                }
+            )
     total = len(questions)
     for values in by_category.values():
         values["accuracy"] = values["correct"] / values["total"] if values["total"] else 0.0

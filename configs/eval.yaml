@@ -16,6 +16,7 @@ model:
 spider:
   split: dev
   few_shot_count: 3
+  eval_batch_size: 4
   max_new_tokens: 256
 
 mmlu:
@@ -24,6 +25,7 @@ mmlu:
   few_shot_split: dev
   total_questions: 150
   few_shot_count: 5
+  eval_batch_size: 16
   max_new_tokens: 4
   categories:
     STEM:

@@ -147,6 +147,11 @@ Avaliar Exp B:
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
 ```
 
+As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
+usa batch 4 para Spider e batch 16 para MMLU em `configs/eval.yaml`; se a GPU
+continuar com folga, esses valores podem ser aumentados, e se houver OOM basta
+reduzi-los.
+
 ## Smoke tests sem modelo grande
 
 Esses comandos nao baixam Qwen nem treinam LoRA.
@@ -166,7 +171,7 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 
 ## Configuracoes
 
-- `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica e SQLite timeout.
+- `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica, batch de avaliacao e SQLite timeout.
 - `configs/train_lora_exp_a.yaml`: LoRA conservador, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_b.yaml`: LoRA mais agressivo, LR `2e-4`, 2 epocas.
 - `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
