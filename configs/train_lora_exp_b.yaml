@@ -16,9 +16,9 @@ training:
   method: lora
   learning_rate: 2.0e-4
   num_train_epochs: 2
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 8
-  max_seq_length: 4096
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  max_seq_length: 2048
   warmup_ratio: 0.03
   weight_decay: 0.0
   logging_steps: 10

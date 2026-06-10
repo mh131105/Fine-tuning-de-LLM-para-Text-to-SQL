@@ -6,6 +6,29 @@ from typing import Any
 
 
 SQL_START_RE = re.compile(r"\b(select|with)\b", re.IGNORECASE)
+SQL_CONTINUATION_MARKERS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in [
+        r"\n\s*[-=#*\s]*explanation\b",
+        r"\n\s*example\s*\d*\s*:",
+        r"\n\s*schema\s*:",
+        r"\n\s*question\s*:",
+        r"\n\s*sql\s*:",
+        r"\n\s*assistant\s*:",
+        r"\n\s*teacher\b",
+    ]
+]
+
+
+def apply_stop_sequences(text: str, stop_sequences: str | list[str] | tuple[str, ...] | None) -> str:
+    if not text or not stop_sequences:
+        return text
+    if isinstance(stop_sequences, str):
+        stop_sequences = [stop_sequences]
+    cut_points = [text.find(sequence) for sequence in stop_sequences if sequence and text.find(sequence) != -1]
+    if not cut_points:
+        return text
+    return text[: min(cut_points)].rstrip()
 
 
 def _generation_kwargs(tokenizer: Any, generation_config: dict[str, Any]) -> dict[str, Any]:
@@ -49,8 +72,12 @@ def generate_text_batch(
 
     outputs = model.generate(**inputs, **_generation_kwargs(tokenizer, generation_config))
     input_length = inputs["input_ids"].shape[1]
+    stop_sequences = generation_config.get("stop_sequences")
     decoded = [
-        tokenizer.decode(outputs[index][input_length:], skip_special_tokens=True)
+        apply_stop_sequences(
+            tokenizer.decode(outputs[index][input_length:], skip_special_tokens=True),
+            stop_sequences,
+        )
         for index in range(len(prompts))
     ]
     elapsed = time.perf_counter() - start
@@ -77,10 +104,41 @@ def extract_sql(raw_output: str) -> str:
     if not match:
         return ""
     sql = text[match.start() :].strip()
-    semicolon = sql.find(";")
+    semicolon = _first_statement_semicolon(sql)
     if semicolon != -1:
         sql = sql[: semicolon + 1]
+    else:
+        continuation = _first_continuation_marker(sql)
+        if continuation != -1:
+            sql = sql[:continuation]
     return sql.strip()
+
+
+def _first_statement_semicolon(sql: str) -> int:
+    quote: str | None = None
+    escaped = False
+    for index, char in enumerate(sql):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            continue
+        if char == ";":
+            return index
+    return -1
+
+
+def _first_continuation_marker(sql: str) -> int:
+    positions = [match.start() for pattern in SQL_CONTINUATION_MARKERS if (match := pattern.search(sql))]
+    return min(positions) if positions else -1
 
 
 def extract_mmlu_answer(raw_output: str) -> str | None:

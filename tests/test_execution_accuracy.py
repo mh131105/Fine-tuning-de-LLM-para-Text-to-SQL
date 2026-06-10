@@ -39,6 +39,14 @@ def test_execution_accuracy_extracts_markdown(tmp_path):
     assert metric.predicted_sql == "SELECT name FROM users;"
 
 
+def test_execution_accuracy_cuts_continuation_without_semicolon(tmp_path):
+    metric = ExecutionAccuracy()
+    raw = "SELECT name FROM users\n\nExample 4:\nSchema:\nDatabase: toy"
+    score = metric.measure(_case(_db(tmp_path), raw, "SELECT name FROM users"))
+    assert score == 1.0
+    assert metric.predicted_sql == "SELECT name FROM users"
+
+
 def test_execution_accuracy_order_mismatch(tmp_path):
     metric = ExecutionAccuracy()
     score = metric.measure(

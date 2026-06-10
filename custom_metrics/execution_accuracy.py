@@ -71,7 +71,7 @@ class ExecutionAccuracy(BaseMetric):
             return self._finish(0.0, "DB_PATH_MISSING", "sqlite_connection_error", "No db_path or db_id provided")
 
         raw_prediction = str(getattr(test_case, "actual_output", "") or "")
-        predicted_sql = extract_sql(raw_prediction) or raw_prediction.strip()
+        predicted_sql = extract_sql(raw_prediction)
         self.predicted_sql = predicted_sql
         if not predicted_sql:
             self.latency_seconds = time.perf_counter() - started

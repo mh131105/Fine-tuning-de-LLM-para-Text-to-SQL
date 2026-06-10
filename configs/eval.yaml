@@ -18,6 +18,16 @@ spider:
   few_shot_count: 3
   eval_batch_size: 4
   max_new_tokens: 256
+  stop_sequences:
+    - "\n\nExample"
+    - "\nExample"
+    - "\nSchema:"
+    - "\nQuestion:"
+    - "\nSQL:"
+    - "\nExplanation"
+    - "\n--------Explanation"
+    - "\nAssistant"
+    - "\nTeacher"
 
 mmlu:
   dataset_name: cais/mmlu

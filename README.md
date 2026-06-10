@@ -57,12 +57,13 @@ pip uninstall -y torchao
 ```
 
 Se o treino LoRA em L4 falhar com CUDA OOM, confirme que os configs estao na
-versao atual. O perfil L4 usa microbatch 1, acumulacao 8 e gradient
-checkpointing para manter batch efetivo 8 sem quantizacao 4-bit:
+versao atual. O perfil L4 usa microbatch 2, acumulacao 4, sequencia 2048 e
+gradient checkpointing para manter batch efetivo 8 sem quantizacao 4-bit:
 
 ```yaml
-per_device_train_batch_size: 1
-gradient_accumulation_steps: 8
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 4
+max_seq_length: 2048
 gradient_checkpointing: true
 ```
 
@@ -210,6 +211,7 @@ outputs/<exp>/
 `custom_metrics.ExecutionAccuracy` herda de `deepeval.metrics.BaseMetric` quando DeepEval esta instalado. A metrica:
 
 - extrai SQL de markdown e texto extra;
+- corta continuacoes de prompt como `Example`, `Schema`, `Question` e `Explanation`;
 - aceita apenas `SELECT` ou `WITH`;
 - bloqueia comandos destrutivos;
 - executa SQL prevista e gold no SQLite em modo read-only;

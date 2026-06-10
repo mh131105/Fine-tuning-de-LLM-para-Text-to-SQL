@@ -81,7 +81,7 @@ def evaluate_spider(
     spider_cfg = config.get("spider", {})
     execution_cfg = config.get("execution", {})
     generation_cfg = dict(config.get("generation", {}))
-    generation_cfg.update({key: value for key, value in spider_cfg.items() if key in {"max_new_tokens"}})
+    generation_cfg.update({key: value for key, value in spider_cfg.items() if key in {"max_new_tokens", "stop_sequences"}})
 
     model, tokenizer = _load_model_for_eval(config, model_path, mock)
     save_environment_snapshot(output, seed=seed, model_name=config.get("model", {}).get("name"))
