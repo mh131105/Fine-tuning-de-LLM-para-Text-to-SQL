@@ -37,7 +37,10 @@ Recomendado: Python 3.10 a 3.12 no Colab.
 pip install -r requirements.txt
 ```
 
-Se o Colab ja tiver `torch`/CUDA instalados, voce pode manter a versao do ambiente e reinstalar as demais bibliotecas manualmente, mas o caminho reproduzivel padrao e o `requirements.txt`.
+No Colab, o `requirements.txt` nao fixa `torch`: ele usa a versao CUDA/PyTorch ja
+fornecida pelo runtime para evitar conflito com `torchvision` e drivers. Se voce
+instalou uma versao anterior deste arquivo e viu conflitos de `numpy`, `pandas`,
+`protobuf` ou `torch`, reinicie o runtime antes de seguir.
 
 ## Dados
 
