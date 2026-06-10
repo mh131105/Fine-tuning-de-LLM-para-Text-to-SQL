@@ -24,6 +24,15 @@ from .prompts import build_mmlu_prompt, build_spider_prompt, prompt_hash
 from .reproducibility import set_global_seed
 
 
+def _progress(items: list[dict[str, Any]], desc: str, unit: str = "example"):
+    try:
+        from tqdm.auto import tqdm
+
+        return tqdm(items, desc=desc, total=len(items), unit=unit, dynamic_ncols=True)
+    except Exception:
+        return items
+
+
 def _load_model_for_eval(config: dict[str, Any], model_path: str | Path | None, mock: bool):
     if mock:
         return None, None
@@ -85,7 +94,7 @@ def evaluate_spider(
     failed = 0
     error_breakdown: dict[str, int] = {}
 
-    for example in dev_examples:
+    for example in _progress(dev_examples, "Spider eval"):
         schema = schemas.get(example["db_id"], {"db_id": example["db_id"], "tables": [], "foreign_keys": []})
         schema_text = serialize_schema(schema)
         prompt = build_spider_prompt(example, schema_text, few_shot)
@@ -167,7 +176,7 @@ def evaluate_mmlu(
     predictions: list[dict[str, Any]] = []
     correct = 0
     by_category: dict[str, dict[str, Any]] = {}
-    for question in questions:
+    for question in _progress(questions, "MMLU eval", unit="question"):
         category = question["category"]
         by_category.setdefault(category, {"total": 0, "correct": 0, "accuracy": 0.0})
         by_category[category]["total"] += 1
