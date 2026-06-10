@@ -66,6 +66,10 @@ def extract_mmlu_answer(raw_output: str) -> str | None:
     if exact:
         return exact.group(1).upper()
 
+    leading = re.match(r"^\s*\(?([ABCDabcd])\)?(?:[ \t]*\n|[\.\):]|$)", compact)
+    if leading:
+        return leading.group(1).upper()
+
     answer_patterns = [
         r"(?i)\banswer\s*(?:is|:)?\s*\(?([ABCD])\)?\b",
         r"(?i)\bcorrect\s+answer\s*(?:is|:)?\s*\(?([ABCD])\)?\b",

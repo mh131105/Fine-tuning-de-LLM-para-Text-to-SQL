@@ -19,6 +19,6 @@ def test_mmlu_prompt_uses_five_shot_style_choices():
         "answer": "A",
     }
     prompt = build_mmlu_prompt(question, [question])
-    assert "Answer with exactly one letter" in prompt
+    assert "Answer the final question with exactly one letter" in prompt
     assert "A. Alpha" in prompt
     assert "Answer: A" in prompt

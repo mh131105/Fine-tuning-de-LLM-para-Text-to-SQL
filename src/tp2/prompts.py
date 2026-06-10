@@ -61,7 +61,8 @@ def build_mmlu_prompt(
     subcategory = question.get("subcategory", "the subject")
     sections = [
         f"The following are multiple choice questions about {subcategory}.",
-        "Answer with exactly one letter: A, B, C, or D.",
+        "Answer the final question with exactly one letter: A, B, C, or D.",
+        "Do not explain your answer. Do not repeat the question. Do not create new questions.",
         "",
     ]
     for shot in few_shot_examples or []:

@@ -164,6 +164,7 @@ def evaluate_mmlu(
     paths = config.get("paths", {})
     mmlu_cfg = config.get("mmlu", {})
     generation_cfg = dict(config.get("generation", {}))
+    generation_cfg.update({key: value for key, value in mmlu_cfg.items() if key in {"max_new_tokens"}})
     model, tokenizer = _load_model_for_eval(config, model_path, mock)
     save_environment_snapshot(output, seed=seed, model_name=config.get("model", {}).get("name"))
 

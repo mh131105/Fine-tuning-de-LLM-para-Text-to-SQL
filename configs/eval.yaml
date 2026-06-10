@@ -24,6 +24,7 @@ mmlu:
   few_shot_split: dev
   total_questions: 150
   few_shot_count: 5
+  max_new_tokens: 4
   categories:
     STEM:
       subcategory: college_computer_science
