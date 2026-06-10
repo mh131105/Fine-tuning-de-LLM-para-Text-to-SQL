@@ -130,6 +130,16 @@ Treinar Experimento B:
 python -m scripts.train --config configs/train_lora_exp_b.yaml
 ```
 
+Treinar Experimento C:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_c.yaml
+```
+
+Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
+`outputs/<exp>` antigo antes do treino para evitar misturar checkpoints e
+metricas de configuracoes anteriores.
+
 Avaliar baseline:
 
 ```bash
@@ -146,6 +156,12 @@ Avaliar Exp B:
 
 ```bash
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
+```
+
+Avaliar Exp C:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
 ```
 
 As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
@@ -173,8 +189,9 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 ## Configuracoes
 
 - `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica, batch de avaliacao e SQLite timeout.
-- `configs/train_lora_exp_a.yaml`: LoRA conservador, LR `1e-4`, 1 epoca.
-- `configs/train_lora_exp_b.yaml`: LoRA mais agressivo, LR `2e-4`, 2 epocas.
+- `configs/train_lora_exp_a.yaml`: LoRA leve, `q_proj/v_proj`, LR `1e-4`, 1 epoca.
+- `configs/train_lora_exp_b.yaml`: LoRA medio, `q_proj/k_proj/v_proj/o_proj`, LR `1e-4`, 1 epoca.
+- `configs/train_lora_exp_c.yaml`: mesmo Exp B com 2 epocas para medir efeito da segunda epoca.
 - `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
 
 Todas as configs usam paths relativos.

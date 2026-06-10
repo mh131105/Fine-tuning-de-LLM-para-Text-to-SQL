@@ -1,10 +1,10 @@
-experiment_name: exp_b
-run_name: exp_b_qkvo_lr1e4_1epoch
+experiment_name: exp_c
+run_name: exp_c_qkvo_lr1e4_2epoch
 seed: 42
 
 paths:
   data_dir: data/processed/spider
-  output_dir: outputs/exp_b
+  output_dir: outputs/exp_c
   model_cache_dir: .cache/huggingface
 
 model:
@@ -16,7 +16,7 @@ model:
 training:
   method: lora
   learning_rate: 1.0e-4
-  num_train_epochs: 1
+  num_train_epochs: 2
   per_device_train_batch_size: 2
   gradient_accumulation_steps: 4
   effective_batch_size: 8
@@ -25,6 +25,8 @@ training:
   weight_decay: 0.0
   logging_steps: 10
   save_strategy: epoch
+  save_total_limit: 3
+  load_best_model_at_end: false
   bf16: true
   fp16: false
   gradient_checkpointing: true

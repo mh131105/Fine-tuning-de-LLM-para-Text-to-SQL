@@ -54,6 +54,21 @@ def _validate_training_runtime() -> None:
         )
 
 
+def _validate_effective_batch_size(training_cfg: dict[str, Any]) -> None:
+    if "effective_batch_size" not in training_cfg:
+        return
+    batch_size = int(training_cfg.get("per_device_train_batch_size", 1))
+    accumulation = int(training_cfg.get("gradient_accumulation_steps", 1))
+    expected = batch_size * accumulation
+    configured = int(training_cfg["effective_batch_size"])
+    if configured != expected:
+        raise ValueError(
+            "invalid_config_schema: training.effective_batch_size must equal "
+            "per_device_train_batch_size * gradient_accumulation_steps "
+            f"({configured} != {batch_size} * {accumulation})"
+        )
+
+
 def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     config = load_yaml(config_path)
@@ -61,6 +76,7 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
     set_global_seed(seed)
     paths = config.get("paths", {})
     training_cfg = config.get("training", {})
+    _validate_effective_batch_size(training_cfg)
     model_cfg = config.get("model", {})
     output_dir = ensure_dir(paths.get("output_dir", f"outputs/{config.get('experiment_name', 'experiment')}"))
     copy_config(config_path, output_dir, "training_config.yaml")
@@ -124,6 +140,13 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         "report_to": training_cfg.get("report_to", "none"),
         "max_steps": max_steps if max_steps is not None else int(training_cfg.get("max_steps", -1)),
     }
+    run_name = training_cfg.get("run_name") or config.get("run_name")
+    if run_name:
+        common_args["run_name"] = str(run_name)
+    if "save_total_limit" in training_cfg:
+        common_args["save_total_limit"] = int(training_cfg["save_total_limit"])
+    if "load_best_model_at_end" in training_cfg:
+        common_args["load_best_model_at_end"] = bool(training_cfg["load_best_model_at_end"])
 
     try:
         from trl import SFTConfig
