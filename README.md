@@ -42,6 +42,20 @@ fornecida pelo runtime para evitar conflito com `torchvision` e drivers. Se voce
 instalou uma versao anterior deste arquivo e viu conflitos de `numpy`, `pandas`,
 `protobuf` ou `torch`, reinicie o runtime antes de seguir.
 
+Se o treino falhar com `Found an incompatible version of torchao`, atualize o
+codigo e reinstale as dependencias:
+
+```bash
+git pull origin main
+pip install -r requirements.txt
+```
+
+Como alternativa emergencial no Colab, remova o pacote incompatível:
+
+```bash
+pip uninstall -y torchao
+```
+
 ## Dados
 
 O comando de preparo do Spider agora tem uma camada de ingestao. Se `data/raw/spider`

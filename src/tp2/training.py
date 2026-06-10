@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,29 @@ def format_spider_for_sft(examples: list[dict[str, Any]], schemas: dict[str, Any
     return rows
 
 
+def _version_tuple(version: str) -> tuple[int, ...]:
+    parts = []
+    for raw_part in version.replace("-", ".").split("."):
+        if raw_part.isdigit():
+            parts.append(int(raw_part))
+        else:
+            break
+    return tuple(parts)
+
+
+def _validate_training_runtime() -> None:
+    try:
+        torchao_version = metadata.version("torchao")
+    except metadata.PackageNotFoundError:
+        return
+    if _version_tuple(torchao_version) < (0, 16, 0):
+        raise ImportError(
+            "Found incompatible torchao version "
+            f"{torchao_version}. PEFT requires torchao>=0.16.0 when torchao is installed. "
+            "Run `pip install -U torchao==0.17.0` or `pip uninstall -y torchao`, then restart the runtime."
+        )
+
+
 def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     config = load_yaml(config_path)
     seed = int(config.get("seed", 42))
@@ -50,6 +74,8 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         logs = {"dry_run": True, "train_rows": len(dataset_rows), "max_steps": max_steps}
         save_json(output_dir / "train_logs.json", logs)
         return logs
+
+    _validate_training_runtime()
 
     from datasets import Dataset
     from transformers import AutoModelForCausalLM, TrainingArguments
@@ -99,20 +125,33 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
 
     try:
         from trl import SFTConfig
+    except ImportError:
+        SFTConfig = None
 
-        args = SFTConfig(
-            **common_args,
-            dataset_text_field="text",
-            max_length=int(training_cfg.get("max_seq_length", 2048)),
-        )
-        trainer = SFTTrainer(
-            model=model,
-            args=args,
-            train_dataset=dataset,
-            peft_config=lora_config,
-            processing_class=tokenizer,
-        )
-    except (ImportError, TypeError):
+    if SFTConfig is not None:
+        try:
+            args = SFTConfig(
+                **common_args,
+                dataset_text_field="text",
+                max_length=int(training_cfg.get("max_seq_length", 2048)),
+            )
+            trainer = SFTTrainer(
+                model=model,
+                args=args,
+                train_dataset=dataset,
+                peft_config=lora_config,
+                processing_class=tokenizer,
+            )
+        except TypeError:
+            args = TrainingArguments(**common_args)
+            trainer = SFTTrainer(
+                model=model,
+                args=args,
+                train_dataset=dataset,
+                peft_config=lora_config,
+                processing_class=tokenizer,
+            )
+    else:
         args = TrainingArguments(**common_args)
         trainer = SFTTrainer(
             model=model,
