@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from src.tp2.preparation import prepare_spider
+from src.preparation import prepare_spider
 
 
 def main() -> None:

@@ -3,7 +3,7 @@
 ## Base do repositorio
 
 - [x] Estrutura de pastas criada conforme PRD.
-- [x] Logica principal em `src/tp2/`.
+- [x] Logica principal em `src/`.
 - [x] Scripts CLI em `scripts/`.
 - [x] Configuracoes YAML em `configs/`.
 - [x] `requirements.txt` criado com versoes fixadas.

@@ -1,4 +1,4 @@
-from src.tp2.prompts import build_mmlu_prompt, build_spider_prompt
+from src.prompts import build_mmlu_prompt, build_spider_prompt
 
 
 def test_spider_prompt_contains_schema_few_shot_and_sql_only_instruction():

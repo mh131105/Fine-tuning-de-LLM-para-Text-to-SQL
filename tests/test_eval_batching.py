@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from src.tp2 import evaluation
+from src import evaluation
 
 
 def _write_json(path, data):

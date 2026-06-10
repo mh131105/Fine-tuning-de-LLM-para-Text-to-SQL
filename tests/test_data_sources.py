@@ -2,7 +2,7 @@ import json
 import shutil
 import sqlite3
 
-from src.tp2.data_sources import ensure_spider_raw_data, find_spider_root, has_spider_raw_files
+from src.data_sources import ensure_spider_raw_data, find_spider_root, has_spider_raw_files
 
 
 def _write_json(path, data):

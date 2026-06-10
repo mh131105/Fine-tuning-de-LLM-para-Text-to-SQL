@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from src.tp2.preparation import prepare_mmlu
+from src.preparation import prepare_mmlu
 
 
 def main() -> None:

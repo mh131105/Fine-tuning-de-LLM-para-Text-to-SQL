@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from src.tp2.evaluation import evaluate_mmlu
+from src.evaluation import evaluate_mmlu
 
 
 def main() -> None:

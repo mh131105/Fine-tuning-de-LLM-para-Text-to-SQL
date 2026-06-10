@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from src.tp2.evaluation import run_benchmarks
+from src.evaluation import run_benchmarks
 
 
 def main() -> None:

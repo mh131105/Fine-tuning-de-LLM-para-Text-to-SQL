@@ -1,4 +1,4 @@
-from src.tp2.inference import extract_mmlu_answer
+from src.inference import extract_mmlu_answer
 
 
 def test_extract_mmlu_answer_exact():

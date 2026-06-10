@@ -284,7 +284,7 @@ O enunciado exige reprodutibilidade, fixação de seeds e geração determiníst
 
 | ID     | Requisito                                                              |
 | ------ | ---------------------------------------------------------------------- |
-| RNF-17 | A lógica principal deve ficar em `src/tp2/`.                           |
+| RNF-17 | A lógica principal deve ficar em `src/`.                           |
 | RNF-18 | Scripts em `scripts/` devem orquestrar módulos, não concentrar regras. |
 | RNF-19 | Funções críticas devem ter testes unitários.                           |
 | RNF-20 | Configurações devem ser declarativas em YAML.                          |
@@ -595,12 +595,12 @@ Esse estilo é adequado porque:
 ```text
 scripts/             -> Entrada CLI e orquestração
 custom_metrics/      -> Métrica DeepEval
-src/tp2/data.py      -> Carregamento e preparação de dados
-src/tp2/prompts.py   -> Templates de prompt
-src/tp2/model.py     -> Carregamento de modelo/tokenizer/adapters
-src/tp2/inference.py -> Geração e parsing de respostas
-src/tp2/sql_utils.py -> Execução e comparação SQL
-src/tp2/logging_utils.py -> Logs, métricas e ambiente
+src/data.py      -> Carregamento e preparação de dados
+src/prompts.py   -> Templates de prompt
+src/model.py     -> Carregamento de modelo/tokenizer/adapters
+src/inference.py -> Geração e parsing de respostas
+src/sql_utils.py -> Execução e comparação SQL
+src/logging_utils.py -> Logs, métricas e ambiente
 configs/             -> Parâmetros declarativos
 outputs/             -> Artefatos gerados
 ```
@@ -650,7 +650,7 @@ outputs/             -> Artefatos gerados
 
 # 9. Organização dos módulos
 
-## 9.1 `src/tp2/data.py`
+## 9.1 `src/data.py`
 
 **Responsabilidade:** carregar, validar e preparar dados.
 
@@ -678,7 +678,7 @@ save_jsonl(records: list[dict], path: Path) -> None
 
 ---
 
-## 9.2 `src/tp2/prompts.py`
+## 9.2 `src/prompts.py`
 
 **Responsabilidade:** gerar prompts determinísticos.
 
@@ -706,7 +706,7 @@ build_mmlu_prompt(
 
 ---
 
-## 9.3 `src/tp2/model.py`
+## 9.3 `src/model.py`
 
 **Responsabilidade:** carregar modelo, tokenizer e adapters.
 
@@ -729,7 +729,7 @@ A configuração LoRA deve usar `LoraConfig` com parâmetros como `r`, `target_m
 
 ---
 
-## 9.4 `src/tp2/inference.py`
+## 9.4 `src/inference.py`
 
 **Responsabilidade:** geração e parsing.
 
@@ -762,7 +762,7 @@ Ordem de parsing:
 
 ---
 
-## 9.5 `src/tp2/sql_utils.py`
+## 9.5 `src/sql_utils.py`
 
 **Responsabilidade:** executar SQL com segurança e comparar resultados.
 
@@ -806,7 +806,7 @@ O `LLMTestCase` precisa carregar metadados do Spider, principalmente `db_id`. Se
 
 ---
 
-## 9.7 `src/tp2/logging_utils.py`
+## 9.7 `src/logging_utils.py`
 
 **Responsabilidade:** salvar logs, ambiente e métricas.
 
@@ -848,15 +848,14 @@ A estrutura base fornecida deve ser mantida. Recomendo adicionar `data/`, `outpu
 │   └── run_benchmarks.py
 │
 ├── src/
-│   └── tp2/
-│       ├── __init__.py
-│       ├── data.py
-│       ├── prompts.py
-│       ├── model.py
-│       ├── sql_utils.py
-│       ├── inference.py
-│       ├── config.py
-│       └── logging_utils.py
+│   ├── __init__.py
+│   ├── data.py
+│   ├── prompts.py
+│   ├── model.py
+│   ├── sql_utils.py
+│   ├── inference.py
+│   ├── config.py
+│   └── logging_utils.py
 │
 ├── tests/
 │   ├── test_execution_accuracy.py
@@ -1879,7 +1878,7 @@ Implementem primeiro a **métrica `ExecutionAccuracy`** e os testes de SQL. Esse
 
 Depois implementem a preparação dos dados, o prompt fixo do Spider, a suíte MMLU 150 e o baseline. Só treinem os adapters depois que o baseline gerar `spider_predictions.jsonl`, `spider_metrics.json`, `mmlu_predictions.jsonl` e `mmlu_metrics.json`.
 
-A arquitetura deve ser um **modular monolith com scripts CLI**. A lógica principal fica em `src/tp2/`. O Colab apenas clona o repositório, instala dependências e executa comandos.
+A arquitetura deve ser um **modular monolith com scripts CLI**. A lógica principal fica em `src/`. O Colab apenas clona o repositório, instala dependências e executa comandos.
 
 A ordem recomendada é:
 

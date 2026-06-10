@@ -14,8 +14,8 @@ except Exception:
         reason: str | None
 
 
-from src.tp2.inference import extract_sql
-from src.tp2.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query
+from src.inference import extract_sql
+from src.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query
 
 
 class ExecutionAccuracy(BaseMetric):

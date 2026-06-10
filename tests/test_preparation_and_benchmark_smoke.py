@@ -1,8 +1,8 @@
 import json
 import sqlite3
 
-from src.tp2.evaluation import run_benchmarks
-from src.tp2.preparation import prepare_spider
+from src.evaluation import run_benchmarks
+from src.preparation import prepare_spider
 
 
 def _write_json(path, data):

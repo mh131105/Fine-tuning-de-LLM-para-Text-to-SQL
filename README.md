@@ -21,7 +21,7 @@ O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos
 configs/             YAMLs de treino e avaliacao
 custom_metrics/      ExecutionAccuracy compativel com DeepEval
 scripts/             CLIs publicas
-src/tp2/             logica principal
+src/                logica principal
 tests/               unitarios e smoke tests com mocks
 notebooks/           runner Colab sem logica exclusiva
 data/                dados locais ignorados pelo Git

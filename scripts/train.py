@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from src.tp2.training import train_lora
+from src.training import train_lora
 
 
 def main() -> None:

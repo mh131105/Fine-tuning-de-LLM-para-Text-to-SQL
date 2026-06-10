@@ -1,6 +1,6 @@
 import pytest
 
-from src.tp2.training import _validate_effective_batch_size, _version_tuple
+from src.training import _validate_effective_batch_size, _version_tuple
 
 
 def test_version_tuple_parses_numeric_prefix():

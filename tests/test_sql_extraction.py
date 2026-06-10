@@ -1,4 +1,4 @@
-from src.tp2.inference import apply_stop_sequences, extract_sql
+from src.inference import apply_stop_sequences, extract_sql
 
 
 def test_extract_sql_cuts_prompt_continuation_without_semicolon():

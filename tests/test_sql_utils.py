@@ -1,6 +1,6 @@
 import sqlite3
 
-from src.tp2.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query
+from src.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query
 
 
 def _db(tmp_path):

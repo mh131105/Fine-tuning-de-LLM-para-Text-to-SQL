@@ -1,33 +1,41 @@
-.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b bench-base bench-a bench-b
+PYTHON ?= python3
+
+.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b train-c bench-base bench-a bench-b bench-c
 
 install:
-	pip install -r requirements.txt
+	$(PYTHON) -m pip install -r requirements.txt
 
 test:
-	python -m pytest
+	$(PYTHON) -m pytest
 
 smoke: test
 
 smoke-mmlu:
-	python -m scripts.prepare_mmlu --config configs/eval.yaml --mock --limit_per_category 2
+	$(PYTHON) -m scripts.prepare_mmlu --config configs/eval.yaml --mock --limit_per_category 2
 
 prepare-spider:
-	python -m scripts.prepare_spider --data_dir data/raw/spider --output_dir data/processed/spider
+	$(PYTHON) -m scripts.prepare_spider --data_dir data/raw/spider --output_dir data/processed/spider
 
 prepare-mmlu:
-	python -m scripts.prepare_mmlu --config configs/eval.yaml
+	$(PYTHON) -m scripts.prepare_mmlu --config configs/eval.yaml
 
 train-a:
-	python -m scripts.train --config configs/train_lora_exp_a.yaml
+	$(PYTHON) -m scripts.train --config configs/train_lora_exp_a.yaml
 
 train-b:
-	python -m scripts.train --config configs/train_lora_exp_b.yaml
+	$(PYTHON) -m scripts.train --config configs/train_lora_exp_b.yaml
+
+train-c:
+	$(PYTHON) -m scripts.train --config configs/train_lora_exp_c.yaml
 
 bench-base:
-	python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
 
 bench-a:
-	python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_a
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_a
 
 bench-b:
-	python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
+
+bench-c:
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
