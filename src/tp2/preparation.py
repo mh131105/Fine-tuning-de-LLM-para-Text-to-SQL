@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import load_yaml
+from .data_sources import SpiderSource, ensure_spider_raw_data
 from .data import (
     convert_spider_table_schema,
     deterministic_sample,
@@ -18,7 +19,23 @@ from .data import (
 from .reproducibility import set_global_seed
 
 
-def prepare_spider(data_dir: str | Path, output_dir: str | Path) -> dict[str, Any]:
+def prepare_spider(
+    data_dir: str | Path,
+    output_dir: str | Path,
+    source: SpiderSource = "auto",
+    source_path: str | Path | None = None,
+    hf_repo: str = "dreamerdeo/multispider",
+    cache_dir: str | Path = ".cache/datasets/spider",
+    force_download: bool = False,
+) -> dict[str, Any]:
+    source_result = ensure_spider_raw_data(
+        data_dir,
+        source=source,
+        source_path=source_path,
+        hf_repo=hf_repo,
+        cache_dir=cache_dir,
+        force=force_download,
+    )
     raw_dir = Path(data_dir)
     output = Path(output_dir)
     train_path = raw_dir / "train_spider.json"
@@ -58,6 +75,11 @@ def prepare_spider(data_dir: str | Path, output_dir: str | Path) -> dict[str, An
         "schemas": len(schemas),
         "missing_databases": missing_databases,
         "unreadable_databases": unreadable_databases,
+        "data_source": {
+            "source": source_result.source,
+            "source_path": str(source_result.source_path) if source_result.source_path else None,
+            "message": source_result.message,
+        },
     }
     save_json(output / "metadata.json", metadata)
     return metadata

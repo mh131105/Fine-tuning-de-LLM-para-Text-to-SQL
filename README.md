@@ -41,7 +41,11 @@ Se o Colab ja tiver `torch`/CUDA instalados, voce pode manter a versao do ambien
 
 ## Dados
 
-Coloque o Spider bruto em:
+O comando de preparo do Spider agora tem uma camada de ingestao. Se `data/raw/spider`
+ja existir, ele usa essa pasta. Caso contrario, ele pode importar de um diretorio,
+de um ZIP/TAR ou tentar baixar de um dataset Hugging Face configuravel.
+
+Estrutura final esperada:
 
 ```text
 data/raw/spider/
@@ -55,10 +59,29 @@ O MMLU e baixado via Hugging Face Datasets por `scripts.prepare_mmlu`.
 
 ## Comandos principais
 
-Preparar Spider:
+Preparar Spider com aquisicao automatica:
 
 ```bash
 python -m scripts.prepare_spider --data_dir data/raw/spider --output_dir data/processed/spider
+```
+
+Importar Spider de um ZIP ou pasta do Drive/local:
+
+```bash
+python -m scripts.prepare_spider \
+  --data_dir data/raw/spider \
+  --output_dir data/processed/spider \
+  --source_path /content/drive/MyDrive/spider.zip
+```
+
+Forcar download via Hugging Face:
+
+```bash
+python -m scripts.prepare_spider \
+  --data_dir data/raw/spider \
+  --output_dir data/processed/spider \
+  --source hf \
+  --hf_repo dreamerdeo/multispider
 ```
 
 Preparar MMLU 150:

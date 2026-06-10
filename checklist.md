@@ -15,6 +15,7 @@
 ## Dados
 
 - [x] `prepare_spider` implementado.
+- [x] Ingestao automatica do Spider por pasta, arquivo compactado ou Hugging Face.
 - [x] Conversao de Spider train/dev para JSONL implementada.
 - [x] Serializacao de schemas Spider implementada.
 - [x] Validacao leve de bancos SQLite Spider implementada.

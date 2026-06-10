@@ -3,6 +3,7 @@
 __all__ = [
     "config",
     "data",
+    "data_sources",
     "evaluation",
     "inference",
     "logging_utils",
