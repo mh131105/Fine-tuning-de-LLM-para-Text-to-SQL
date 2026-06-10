@@ -56,6 +56,16 @@ Como alternativa emergencial no Colab, remova o pacote incompatível:
 pip uninstall -y torchao
 ```
 
+Se o treino LoRA em L4 falhar com CUDA OOM, confirme que os configs estao na
+versao atual. O perfil L4 usa microbatch 1, acumulacao 8 e gradient
+checkpointing para manter batch efetivo 8 sem quantizacao 4-bit:
+
+```yaml
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+gradient_checkpointing: true
+```
+
 ## Dados
 
 O comando de preparo do Spider agora tem uma camada de ingestao. Se `data/raw/spider`

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import os
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,7 @@ def _validate_training_runtime() -> None:
 
 
 def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: bool = False) -> dict[str, Any]:
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     config = load_yaml(config_path)
     seed = int(config.get("seed", 42))
     set_global_seed(seed)
