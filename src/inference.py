@@ -9,13 +9,15 @@ SQL_START_RE = re.compile(r"\b(select|with)\b", re.IGNORECASE)
 SQL_CONTINUATION_MARKERS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in [
-        r"\n\s*[-=#*\s]*explanation\b",
-        r"\n\s*example\s*\d*\s*:",
-        r"\n\s*schema\s*:",
-        r"\n\s*question\s*:",
-        r"\n\s*sql\s*:",
-        r"\n\s*assistant\s*:",
-        r"\n\s*teacher\b",
+        r"\s+[-=#*\s]*explanation\b",
+        r"\s+example\s*\d*\s*:",
+        r"\s+schema\s*:",
+        r"\s+question\s*:",
+        r"\s+assistant\s*:",
+        r"\s+teacher\s*:",
+        r"\s+output\s*:\s*sql\s*:",
+        r"\s+task\s+completed\.?\s*sql\s*:",
+        r"\s+sql\s*:\s*(?=select|with)\b",
     ]
 ]
 
@@ -137,8 +139,32 @@ def _first_statement_semicolon(sql: str) -> int:
 
 
 def _first_continuation_marker(sql: str) -> int:
-    positions = [match.start() for pattern in SQL_CONTINUATION_MARKERS if (match := pattern.search(sql))]
+    positions = []
+    for pattern in SQL_CONTINUATION_MARKERS:
+        for match in pattern.finditer(sql):
+            if not _is_inside_sql_quote(sql, match.start()):
+                positions.append(match.start())
+                break
     return min(positions) if positions else -1
+
+
+def _is_inside_sql_quote(sql: str, position: int) -> bool:
+    quote: str | None = None
+    escaped = False
+    for char in sql[:position]:
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            continue
+        if char in {"'", '"'}:
+            quote = char
+    return quote is not None
 
 
 def extract_mmlu_answer(raw_output: str) -> str | None:

@@ -1,6 +1,6 @@
 import sqlite3
 
-from src.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query
+from src.sql_utils import compare_sql_results, execute_sql, has_order_by, is_safe_select_query, normalize_result
 
 
 def _db(tmp_path):
@@ -38,3 +38,20 @@ def test_compare_preserves_order_when_requested(tmp_path):
     predicted = execute_sql(db_path, "SELECT name FROM singer ORDER BY name DESC")
     gold = execute_sql(db_path, "SELECT name FROM singer ORDER BY name ASC")
     assert not compare_sql_results(predicted, gold, preserve_order=True)
+
+
+def test_execute_sql_handles_invalid_utf8_text(tmp_path):
+    db_path = tmp_path / "encoding.sqlite"
+    conn = sqlite3.connect(db_path)
+    conn.execute("CREATE TABLE players (last_name TEXT)")
+    conn.execute("INSERT INTO players (last_name) VALUES (CAST(x'80' AS TEXT))")
+    conn.commit()
+    conn.close()
+
+    predicted = execute_sql(db_path, "SELECT last_name FROM players")
+    gold = execute_sql(db_path, "SELECT last_name FROM players")
+
+    assert predicted.success
+    assert predicted.rows == [(b"\x80",)]
+    assert normalize_result(predicted.rows, preserve_order=True) == [("\ufffd",)]
+    assert compare_sql_results(predicted, gold, preserve_order=True)

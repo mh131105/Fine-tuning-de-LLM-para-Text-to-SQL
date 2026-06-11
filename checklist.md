@@ -30,6 +30,7 @@
 - [x] Prompt MMLU 5-shot com alternativas A/B/C/D.
 - [x] Geracao deterministica configurada (`temperature=0`, `do_sample=false`).
 - [x] Extracao robusta de SQL de markdown/texto extra.
+- [x] Corte de continuacoes Spider na mesma linha (`SQL:`, `Output: SQL`, `Task completed. SQL`).
 - [x] Parsing de resposta MMLU A/B/C/D.
 
 ## Metrica Spider
@@ -37,6 +38,7 @@
 - [x] `ExecutionAccuracy` em `custom_metrics/execution_accuracy.py`.
 - [x] Heranca de `deepeval.metrics.BaseMetric` quando DeepEval esta instalado.
 - [x] Execucao SQLite read-only.
+- [x] Leitura SQLite como bytes para evitar falha por texto invalido em UTF-8.
 - [x] Bloqueio de comandos SQL destrutivos.
 - [x] Comparacao ignora ordem sem `ORDER BY`.
 - [x] Comparacao preserva ordem com `ORDER BY`.
@@ -48,6 +50,9 @@
 - [x] `python -m scripts.train --config ...` implementado.
 - [x] Seeds fixadas antes do treino.
 - [x] Formatacao SFT a partir do Spider train.
+- [x] Dataset SFT em formato `prompt`/`completion`.
+- [x] Loss do treino aplicada apenas na completion SQL.
+- [x] EOS `<|im_end|>` adicionado ao fim das completions.
 - [x] Carregamento de tokenizer/modelo implementado.
 - [x] LoRA implementado via PEFT.
 - [x] QLoRA/T4 template implementado.

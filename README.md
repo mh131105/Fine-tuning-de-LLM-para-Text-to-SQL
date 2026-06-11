@@ -64,6 +64,8 @@ gradient checkpointing para manter batch efetivo 8 sem quantizacao 4-bit:
 per_device_train_batch_size: 2
 gradient_accumulation_steps: 4
 max_seq_length: 2048
+completion_only_loss: true
+eos_token: "<|im_end|>"
 gradient_checkpointing: true
 ```
 
@@ -196,6 +198,11 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 
 Todas as configs usam paths relativos.
 
+O dataset de treino e montado em formato `prompt` + `completion`, nao em um
+campo unico `text`. Com `completion_only_loss: true`, o TRL calcula a loss
+apenas nos tokens da SQL esperada. A completion recebe o EOS do Qwen
+`<|im_end|>` para ensinar o modelo a parar depois da query.
+
 ## Artefatos esperados
 
 Depois de cada benchmark:
@@ -228,10 +235,14 @@ outputs/<exp>/
 `custom_metrics.ExecutionAccuracy` herda de `deepeval.metrics.BaseMetric` quando DeepEval esta instalado. A metrica:
 
 - extrai SQL de markdown e texto extra;
-- corta continuacoes de prompt como `Example`, `Schema`, `Question` e `Explanation`;
+- corta continuacoes de prompt como `Example`, `Schema`, `Question`, `SQL`,
+  `Output: SQL`, `Task completed. SQL` e `Explanation`, inclusive quando a
+  continuacao aparece na mesma linha;
 - aceita apenas `SELECT` ou `WITH`;
 - bloqueia comandos destrutivos;
 - executa SQL prevista e gold no SQLite em modo read-only;
+- le texto SQLite como bytes para evitar falhas de UTF-8 do banco serem
+  confundidas com erro de SQL do modelo;
 - compara resultados ignorando ordem quando nao ha `ORDER BY`;
 - preserva ordem quando ha `ORDER BY`;
 - retorna `1.0` ou `0.0` e registra `error_type`.

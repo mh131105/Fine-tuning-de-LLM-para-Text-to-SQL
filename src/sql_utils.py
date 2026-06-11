@@ -70,6 +70,7 @@ def execute_sql(db_path: str | Path, sql: str, timeout_seconds: int = 5) -> Quer
     try:
         uri = f"file:{path.resolve()}?mode=ro"
         connection = sqlite3.connect(uri, uri=True, timeout=timeout_seconds)
+        connection.text_factory = bytes
         connection.execute("PRAGMA query_only = ON")
 
         def progress_handler() -> int:

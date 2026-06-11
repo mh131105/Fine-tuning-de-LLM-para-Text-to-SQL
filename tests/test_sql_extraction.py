@@ -21,6 +21,24 @@ The query filters singers older than 20."""
     assert extract_sql(raw) == "SELECT DISTINCT Country FROM singer WHERE Age > 20"
 
 
+def test_extract_sql_cuts_same_line_sql_continuation():
+    raw = "SELECT name FROM singer SQL: SELECT age FROM singer"
+
+    assert extract_sql(raw) == "SELECT name FROM singer"
+
+
+def test_extract_sql_cuts_same_line_task_completed_continuation():
+    raw = "SELECT name FROM singer Task completed. SQL: SELECT age FROM singer"
+
+    assert extract_sql(raw) == "SELECT name FROM singer"
+
+
+def test_extract_sql_cuts_same_line_output_sql_continuation():
+    raw = "SELECT name FROM singer Output: SQL: SELECT age FROM singer"
+
+    assert extract_sql(raw) == "SELECT name FROM singer"
+
+
 def test_extract_sql_prefers_first_statement_with_semicolon():
     raw = "SELECT name FROM users; Explanation: this query lists users."
 
@@ -31,6 +49,12 @@ def test_extract_sql_ignores_semicolon_inside_string_literal():
     raw = "SELECT name FROM users WHERE note = 'A; B'\nQuestion: generated continuation"
 
     assert extract_sql(raw) == "SELECT name FROM users WHERE note = 'A; B'"
+
+
+def test_extract_sql_ignores_continuation_marker_inside_string_literal():
+    raw = "SELECT name FROM users WHERE note = 'Task completed. SQL: SELECT age FROM users'"
+
+    assert extract_sql(raw) == raw
 
 
 def test_extract_sql_handles_markdown_fence_and_followup_text():

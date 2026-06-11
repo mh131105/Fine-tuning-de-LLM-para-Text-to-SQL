@@ -14,7 +14,19 @@ from .prompts import build_spider_prompt
 from .reproducibility import set_global_seed
 
 
-def format_spider_for_sft(examples: list[dict[str, Any]], schemas: dict[str, Any], few_shot_count: int = 0) -> list[dict[str, str]]:
+def _completion_with_eos(answer: str, eos_token: str | None) -> str:
+    completion = answer.strip()
+    if eos_token and not completion.endswith(eos_token):
+        completion = f"{completion}{eos_token}"
+    return completion
+
+
+def format_spider_for_sft(
+    examples: list[dict[str, Any]],
+    schemas: dict[str, Any],
+    few_shot_count: int = 0,
+    eos_token: str | None = None,
+) -> list[dict[str, str]]:
     few_shot = []
     if few_shot_count:
         for example in examples[:few_shot_count]:
@@ -27,7 +39,7 @@ def format_spider_for_sft(examples: list[dict[str, Any]], schemas: dict[str, Any
         schema = schemas.get(example["db_id"], {"db_id": example["db_id"], "tables": [], "foreign_keys": []})
         prompt = build_spider_prompt(example, serialize_schema(schema), few_shot)
         answer = (example.get("gold_sql") or example.get("query") or "").strip()
-        rows.append({"text": f"{prompt} {answer}"})
+        rows.append({"prompt": f"{prompt} ", "completion": _completion_with_eos(answer, eos_token)})
     return rows
 
 
@@ -69,6 +81,15 @@ def _validate_effective_batch_size(training_cfg: dict[str, Any]) -> None:
         )
 
 
+def _training_eos_token(training_cfg: dict[str, Any], tokenizer: Any | None = None) -> str | None:
+    configured = training_cfg.get("eos_token")
+    if configured is not None:
+        return str(configured)
+    if tokenizer is not None:
+        return getattr(tokenizer, "eos_token", None)
+    return "<|im_end|>"
+
+
 def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     config = load_yaml(config_path)
@@ -85,10 +106,15 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
     spider_data_dir = Path(paths.get("data_dir", "data/processed/spider"))
     examples = load_spider_train(spider_data_dir)
     schemas = load_spider_schemas(spider_data_dir)
-    dataset_rows = format_spider_for_sft(examples, schemas, int(training_cfg.get("few_shot_count", 0)))
-    save_json(output_dir / "dataset_preview.json", {"num_rows": len(dataset_rows), "first_row": dataset_rows[0] if dataset_rows else None})
 
     if dry_run:
+        dataset_rows = format_spider_for_sft(
+            examples,
+            schemas,
+            int(training_cfg.get("few_shot_count", 0)),
+            eos_token=_training_eos_token(training_cfg),
+        )
+        save_json(output_dir / "dataset_preview.json", {"num_rows": len(dataset_rows), "first_row": dataset_rows[0] if dataset_rows else None})
         logs = {"dry_run": True, "train_rows": len(dataset_rows), "max_steps": max_steps}
         save_json(output_dir / "train_logs.json", logs)
         return logs
@@ -99,9 +125,17 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
     from transformers import AutoModelForCausalLM, TrainingArguments
     from trl import SFTTrainer
 
-    dataset = Dataset.from_list(dataset_rows)
     model_name = model_cfg.get("name", "Qwen/Qwen2.5-3B-Instruct")
     tokenizer = load_tokenizer(model_name, cache_dir=paths.get("model_cache_dir"))
+    eos_token = _training_eos_token(training_cfg, tokenizer)
+    dataset_rows = format_spider_for_sft(
+        examples,
+        schemas,
+        int(training_cfg.get("few_shot_count", 0)),
+        eos_token=eos_token,
+    )
+    save_json(output_dir / "dataset_preview.json", {"num_rows": len(dataset_rows), "first_row": dataset_rows[0] if dataset_rows else None})
+    dataset = Dataset.from_list(dataset_rows)
 
     model_kwargs: dict[str, Any] = {
         "trust_remote_code": True,
@@ -157,8 +191,9 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         try:
             args = SFTConfig(
                 **common_args,
-                dataset_text_field="text",
                 max_length=int(training_cfg.get("max_seq_length", 2048)),
+                completion_only_loss=bool(training_cfg.get("completion_only_loss", True)),
+                eos_token=eos_token,
             )
             trainer = SFTTrainer(
                 model=model,
@@ -184,7 +219,6 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
             train_dataset=dataset,
             peft_config=lora_config,
             tokenizer=tokenizer,
-            dataset_text_field="text",
             max_seq_length=int(training_cfg.get("max_seq_length", 2048)),
         )
 
