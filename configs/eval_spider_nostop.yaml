@@ -1,0 +1,49 @@
+seed: 42
+
+paths:
+  spider_data_dir: data/processed/spider
+  spider_db_dir: data/raw/spider/database
+  mmlu_suite_path: data/processed/mmlu_150_suite.json
+  baseline_dir: outputs/base
+  model_cache_dir: .cache/huggingface
+
+model:
+  name: Qwen/Qwen2.5-3B-Instruct
+  profile: l4
+  device_map: auto
+  attn_implementation: sdpa
+
+spider:
+  split: dev
+  few_shot_count: 3
+  eval_batch_size: 4
+  max_new_tokens: 256
+  stop_sequences: []
+
+mmlu:
+  dataset_name: cais/mmlu
+  eval_split: test
+  few_shot_split: dev
+  total_questions: 150
+  few_shot_count: 5
+  eval_batch_size: 16
+  max_new_tokens: 4
+  categories:
+    STEM:
+      subcategory: college_computer_science
+      count: 50
+    Humanidades:
+      subcategory: philosophy
+      count: 50
+    Sociais:
+      subcategory: econometrics
+      count: 50
+
+generation:
+  temperature: 0.0
+  do_sample: false
+  max_new_tokens: 256
+
+execution:
+  sqlite_timeout_seconds: 5
+  allow_only_select: true

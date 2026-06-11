@@ -166,6 +166,24 @@ Avaliar Exp C:
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
 ```
 
+Diagnostico Spider sem `stop_sequences` para investigar saidas vazias do Exp C:
+
+```bash
+python -m scripts.evaluate_spider \
+  --config configs/eval_spider_nostop.yaml \
+  --model_path outputs/exp_c \
+  --output_dir outputs/diagnostics/exp_c_spider_nostop
+```
+
+Avaliar o checkpoint de 1 epoca do Exp C:
+
+```bash
+python -m scripts.evaluate_spider \
+  --config configs/eval_spider_nostop.yaml \
+  --model_path outputs/exp_c/checkpoint-875 \
+  --output_dir outputs/diagnostics/exp_c_ckpt875_spider_nostop
+```
+
 As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
 usa batch 4 para Spider e batch 16 para MMLU em `configs/eval.yaml`; se a GPU
 continuar com folga, esses valores podem ser aumentados, e se houver OOM basta
@@ -191,6 +209,7 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 ## Configuracoes
 
 - `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica, batch de avaliacao e SQLite timeout.
+- `configs/eval_spider_nostop.yaml`: diagnostico Spider sem `stop_sequences`, para separar erro real de EOS/stopping de corte prematuro da saida.
 - `configs/train_lora_exp_a.yaml`: LoRA leve, `q_proj/v_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_b.yaml`: LoRA medio, `q_proj/k_proj/v_proj/o_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_c.yaml`: mesmo Exp B com 2 epocas para medir efeito da segunda epoca.

@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b train-c bench-base bench-a bench-b bench-c
+.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b train-c bench-base bench-a bench-b bench-c diagnose-exp-c-spider-nostop diagnose-exp-c-ckpt875-spider-nostop diagnose-exp-c-nostop
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -39,3 +39,11 @@ bench-b:
 
 bench-c:
 	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
+
+diagnose-exp-c-spider-nostop:
+	$(PYTHON) -m scripts.evaluate_spider --config configs/eval_spider_nostop.yaml --model_path outputs/exp_c --output_dir outputs/diagnostics/exp_c_spider_nostop
+
+diagnose-exp-c-ckpt875-spider-nostop:
+	$(PYTHON) -m scripts.evaluate_spider --config configs/eval_spider_nostop.yaml --model_path outputs/exp_c/checkpoint-875 --output_dir outputs/diagnostics/exp_c_ckpt875_spider_nostop
+
+diagnose-exp-c-nostop: diagnose-exp-c-spider-nostop diagnose-exp-c-ckpt875-spider-nostop
