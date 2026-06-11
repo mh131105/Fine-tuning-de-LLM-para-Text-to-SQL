@@ -57,15 +57,15 @@ pip uninstall -y torchao
 ```
 
 As configs principais de LoRA estao ajustadas para Colab A100, priorizando
-velocidade. Elas usam microbatch 8, acumulacao 2, sequencia 2048 e batch efetivo
-16, sem quantizacao 4-bit e sem FlashAttention:
+velocidade com margem de VRAM. Elas usam microbatch 4, acumulacao 4, sequencia
+2048 e batch efetivo 16, sem quantizacao 4-bit e sem FlashAttention:
 
 ```yaml
 profile: a100
 attn_implementation: sdpa
 torch_dtype: bf16
-per_device_train_batch_size: 8
-gradient_accumulation_steps: 2
+per_device_train_batch_size: 4
+gradient_accumulation_steps: 4
 effective_batch_size: 16
 max_seq_length: 2048
 completion_only_loss: true
@@ -75,8 +75,8 @@ tf32: true
 gradient_checkpointing: false
 ```
 
-Se a A100 ainda acusar OOM, reduza apenas `per_device_train_batch_size` para 4
-e aumente `gradient_accumulation_steps` para 4 para manter batch efetivo 16.
+Se a A100 ainda acusar OOM, ative `gradient_checkpointing: true` mantendo o
+batch efetivo 16, ou reduza temporariamente o batch efetivo para 8.
 
 ## Dados
 
