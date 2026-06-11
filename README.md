@@ -138,6 +138,12 @@ Treinar Experimento C:
 python -m scripts.train --config configs/train_lora_exp_c.yaml
 ```
 
+Treinar Experimento D, diagnostico de LR mais alto:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_d.yaml
+```
+
 Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
 `outputs/<exp>` antigo antes do treino para evitar misturar checkpoints e
 metricas de configuracoes anteriores.
@@ -164,6 +170,12 @@ Avaliar Exp C:
 
 ```bash
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
+```
+
+Avaliar Exp D:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_d
 ```
 
 Diagnostico Spider sem `stop_sequences` para investigar saidas vazias do Exp C:
@@ -213,6 +225,7 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 - `configs/train_lora_exp_a.yaml`: LoRA leve, `q_proj/v_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_b.yaml`: LoRA medio, `q_proj/k_proj/v_proj/o_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_c.yaml`: mesmo Exp B com 2 epocas para medir efeito da segunda epoca.
+- `configs/train_lora_exp_d.yaml`: mesmo Exp B com LR `2e-4`, para testar se `1e-4` foi conservador.
 - `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
 
 Todas as configs usam paths relativos.
