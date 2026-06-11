@@ -52,6 +52,7 @@
 - [x] Formatacao SFT a partir do Spider train.
 - [x] Dataset SFT em formato `prompt`/`completion`.
 - [x] Loss do treino aplicada apenas na completion SQL.
+- [x] `completion_mask` tokenizada explicitamente antes do `SFTTrainer`.
 - [x] EOS `<|im_end|>` adicionado ao fim das completions.
 - [x] Carregamento de tokenizer/modelo implementado.
 - [x] LoRA implementado via PEFT.

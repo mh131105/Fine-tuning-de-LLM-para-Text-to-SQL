@@ -15,7 +15,7 @@ from .reproducibility import set_global_seed
 
 
 def _completion_with_eos(answer: str, eos_token: str | None) -> str:
-    completion = answer.strip()
+    completion = f" {answer.strip()}" if answer.strip() else ""
     if eos_token and not completion.endswith(eos_token):
         completion = f"{completion}{eos_token}"
     return completion
@@ -39,8 +39,26 @@ def format_spider_for_sft(
         schema = schemas.get(example["db_id"], {"db_id": example["db_id"], "tables": [], "foreign_keys": []})
         prompt = build_spider_prompt(example, serialize_schema(schema), few_shot)
         answer = (example.get("gold_sql") or example.get("query") or "").strip()
-        rows.append({"prompt": f"{prompt} ", "completion": _completion_with_eos(answer, eos_token)})
+        rows.append({"prompt": prompt, "completion": _completion_with_eos(answer, eos_token)})
     return rows
+
+
+def tokenize_sft_rows(
+    rows: list[dict[str, str]],
+    tokenizer: Any,
+    max_length: int | None = None,
+) -> list[dict[str, list[int]]]:
+    tokenized_rows: list[dict[str, list[int]]] = []
+    for row in rows:
+        prompt_ids = tokenizer(row["prompt"], add_special_tokens=False)["input_ids"]
+        completion_ids = tokenizer(row["completion"], add_special_tokens=False)["input_ids"]
+        input_ids = prompt_ids + completion_ids
+        completion_mask = [0] * len(prompt_ids) + [1] * len(completion_ids)
+        if max_length is not None:
+            input_ids = input_ids[:max_length]
+            completion_mask = completion_mask[:max_length]
+        tokenized_rows.append({"input_ids": input_ids, "completion_mask": completion_mask})
+    return tokenized_rows
 
 
 def _version_tuple(version: str) -> tuple[int, ...]:
@@ -135,7 +153,12 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         eos_token=eos_token,
     )
     save_json(output_dir / "dataset_preview.json", {"num_rows": len(dataset_rows), "first_row": dataset_rows[0] if dataset_rows else None})
-    dataset = Dataset.from_list(dataset_rows)
+    tokenized_rows = tokenize_sft_rows(
+        dataset_rows,
+        tokenizer,
+        max_length=int(training_cfg.get("max_seq_length", 2048)),
+    )
+    dataset = Dataset.from_list(tokenized_rows)
 
     model_kwargs: dict[str, Any] = {
         "trust_remote_code": True,

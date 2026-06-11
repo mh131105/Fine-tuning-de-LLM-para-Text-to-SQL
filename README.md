@@ -233,7 +233,9 @@ Todas as configs usam paths relativos.
 O dataset de treino e montado em formato `prompt` + `completion`, nao em um
 campo unico `text`. Com `completion_only_loss: true`, o TRL calcula a loss
 apenas nos tokens da SQL esperada. A completion recebe o EOS do Qwen
-`<|im_end|>` para ensinar o modelo a parar depois da query.
+`<|im_end|>` para ensinar o modelo a parar depois da query. Antes de chamar o
+`SFTTrainer`, o projeto tokeniza esses campos e cria `completion_mask`
+explicitamente, evitando desalinhamento na fronteira `prompt`/`completion`.
 
 ## Artefatos esperados
 

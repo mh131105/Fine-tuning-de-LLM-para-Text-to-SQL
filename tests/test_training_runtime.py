@@ -1,6 +1,12 @@
 import pytest
 
-from src.training import _training_eos_token, _validate_effective_batch_size, _version_tuple, format_spider_for_sft
+from src.training import (
+    _training_eos_token,
+    _validate_effective_batch_size,
+    _version_tuple,
+    format_spider_for_sft,
+    tokenize_sft_rows,
+)
 
 
 def test_version_tuple_parses_numeric_prefix():
@@ -67,6 +73,36 @@ def test_format_spider_for_sft_uses_prompt_completion_with_eos():
 
     assert len(rows) == 1
     assert set(rows[0]) == {"prompt", "completion"}
-    assert rows[0]["prompt"].endswith("SQL: ")
+    assert rows[0]["prompt"].endswith("SQL:")
     assert "Question: How many singers are there?" in rows[0]["prompt"]
-    assert rows[0]["completion"] == "SELECT count(*) FROM singer<|im_end|>"
+    assert rows[0]["completion"] == " SELECT count(*) FROM singer<|im_end|>"
+
+
+def test_tokenize_sft_rows_builds_explicit_completion_mask():
+    class FakeTokenizer:
+        def __call__(self, text, add_special_tokens=False):
+            assert add_special_tokens is False
+            return {"input_ids": [ord(char) for char in text]}
+
+    rows = [{"prompt": "SQL:", "completion": " SELECT 1<|im_end|>"}]
+
+    tokenized = tokenize_sft_rows(rows, FakeTokenizer())
+
+    assert tokenized == [
+        {
+            "input_ids": [ord(char) for char in "SQL: SELECT 1<|im_end|>"],
+            "completion_mask": [0, 0, 0, 0] + [1] * len(" SELECT 1<|im_end|>"),
+        }
+    ]
+
+
+def test_tokenize_sft_rows_truncates_input_and_mask_together():
+    class FakeTokenizer:
+        def __call__(self, text, add_special_tokens=False):
+            return {"input_ids": [ord(char) for char in text]}
+
+    rows = [{"prompt": "SQL:", "completion": " SELECT 1<|im_end|>"}]
+
+    tokenized = tokenize_sft_rows(rows, FakeTokenizer(), max_length=6)
+
+    assert tokenized == [{"input_ids": [ord(char) for char in "SQL: S"], "completion_mask": [0, 0, 0, 0, 1, 1]}]
