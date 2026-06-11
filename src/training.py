@@ -9,7 +9,7 @@ from typing import Any
 from .config import copy_config, ensure_dir, load_yaml
 from .data import load_spider_schemas, load_spider_train, save_json, serialize_schema
 from .logging_utils import save_environment_snapshot
-from .model import build_lora_config, build_quantization_config, load_tokenizer
+from .model import _torch_dtype, build_lora_config, build_quantization_config, load_tokenizer
 from .prompts import build_spider_prompt
 from .reproducibility import set_global_seed
 
@@ -108,6 +108,19 @@ def _training_eos_token(training_cfg: dict[str, Any], tokenizer: Any | None = No
     return "<|im_end|>"
 
 
+def _configure_torch_performance(training_cfg: dict[str, Any]) -> None:
+    try:
+        import torch
+    except ImportError:
+        return
+    if bool(training_cfg.get("tf32", False)) and torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    precision = training_cfg.get("float32_matmul_precision")
+    if precision and hasattr(torch, "set_float32_matmul_precision"):
+        torch.set_float32_matmul_precision(str(precision))
+
+
 def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: bool = False) -> dict[str, Any]:
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     config = load_yaml(config_path)
@@ -138,6 +151,7 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         return logs
 
     _validate_training_runtime()
+    _configure_torch_performance(training_cfg)
 
     from datasets import Dataset
     from transformers import AutoModelForCausalLM, TrainingArguments
@@ -166,6 +180,9 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         "cache_dir": paths.get("model_cache_dir"),
         "attn_implementation": model_cfg.get("attn_implementation", "sdpa"),
     }
+    torch_dtype = _torch_dtype(model_cfg.get("torch_dtype"))
+    if torch_dtype is not None:
+        model_kwargs["torch_dtype"] = torch_dtype
     quantization_config = build_quantization_config(config)
     if quantization_config is not None:
         model_kwargs["quantization_config"] = quantization_config
@@ -204,6 +221,18 @@ def train_lora(config_path: str | Path, max_steps: int | None = None, dry_run: b
         common_args["save_total_limit"] = int(training_cfg["save_total_limit"])
     if "load_best_model_at_end" in training_cfg:
         common_args["load_best_model_at_end"] = bool(training_cfg["load_best_model_at_end"])
+    if "optim" in training_cfg:
+        common_args["optim"] = str(training_cfg["optim"])
+    if "tf32" in training_cfg:
+        common_args["tf32"] = bool(training_cfg["tf32"])
+    if "dataloader_num_workers" in training_cfg:
+        common_args["dataloader_num_workers"] = int(training_cfg["dataloader_num_workers"])
+    if "dataloader_pin_memory" in training_cfg:
+        common_args["dataloader_pin_memory"] = bool(training_cfg["dataloader_pin_memory"])
+    if "dataloader_prefetch_factor" in training_cfg:
+        common_args["dataloader_prefetch_factor"] = int(training_cfg["dataloader_prefetch_factor"])
+    if "group_by_length" in training_cfg:
+        common_args["group_by_length"] = bool(training_cfg["group_by_length"])
 
     try:
         from trl import SFTConfig

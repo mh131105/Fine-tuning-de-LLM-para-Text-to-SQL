@@ -1,5 +1,6 @@
 import pytest
 
+from src.config import load_yaml
 from src.training import (
     _training_eos_token,
     _validate_effective_batch_size,
@@ -33,6 +34,21 @@ def test_validate_effective_batch_size_rejects_mismatch():
                 "effective_batch_size": 16,
             }
         )
+
+
+@pytest.mark.parametrize(
+    "config_path",
+    [
+        "configs/train_lora_exp_a.yaml",
+        "configs/train_lora_exp_b.yaml",
+        "configs/train_lora_exp_c.yaml",
+        "configs/train_lora_exp_d.yaml",
+    ],
+)
+def test_lora_training_configs_have_valid_effective_batch_size(config_path):
+    config = load_yaml(config_path)
+
+    _validate_effective_batch_size(config["training"])
 
 
 def test_training_eos_token_prefers_config():

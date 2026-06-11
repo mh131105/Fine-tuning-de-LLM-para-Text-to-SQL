@@ -56,18 +56,27 @@ Como alternativa emergencial no Colab, remova o pacote incompatível:
 pip uninstall -y torchao
 ```
 
-Se o treino LoRA em L4 falhar com CUDA OOM, confirme que os configs estao na
-versao atual. O perfil L4 usa microbatch 2, acumulacao 4, sequencia 2048 e
-gradient checkpointing para manter batch efetivo 8 sem quantizacao 4-bit:
+As configs principais de LoRA estao ajustadas para Colab A100, priorizando
+velocidade. Elas usam microbatch 8, acumulacao 2, sequencia 2048 e batch efetivo
+16, sem quantizacao 4-bit e sem FlashAttention:
 
 ```yaml
-per_device_train_batch_size: 2
-gradient_accumulation_steps: 4
+profile: a100
+attn_implementation: sdpa
+torch_dtype: bf16
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 2
+effective_batch_size: 16
 max_seq_length: 2048
 completion_only_loss: true
 eos_token: "<|im_end|>"
-gradient_checkpointing: true
+optim: adamw_torch_fused
+tf32: true
+gradient_checkpointing: false
 ```
+
+Se a A100 ainda acusar OOM, reduza apenas `per_device_train_batch_size` para 4
+e aumente `gradient_accumulation_steps` para 4 para manter batch efetivo 16.
 
 ## Dados
 
@@ -144,6 +153,12 @@ Treinar Experimento D, diagnostico de LR mais alto:
 python -m scripts.train --config configs/train_lora_exp_d.yaml
 ```
 
+Treinar todos os experimentos A/B/C/D:
+
+```bash
+make train-all
+```
+
 Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
 `outputs/<exp>` antigo antes do treino para evitar misturar checkpoints e
 metricas de configuracoes anteriores.
@@ -187,17 +202,19 @@ python -m scripts.evaluate_spider \
   --output_dir outputs/diagnostics/exp_c_spider_nostop
 ```
 
-Avaliar o checkpoint de 1 epoca do Exp C:
+Avaliar o primeiro checkpoint salvo do Exp C, que corresponde ao fim da primeira
+epoca:
 
 ```bash
+EXP_C_EPOCH1_CKPT="$(ls -d outputs/exp_c/checkpoint-* | sort -V | head -n 1)"
 python -m scripts.evaluate_spider \
   --config configs/eval_spider_nostop.yaml \
-  --model_path outputs/exp_c/checkpoint-875 \
-  --output_dir outputs/diagnostics/exp_c_ckpt875_spider_nostop
+  --model_path "$EXP_C_EPOCH1_CKPT" \
+  --output_dir outputs/diagnostics/exp_c_epoch1_spider_nostop
 ```
 
 As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
-usa batch 4 para Spider e batch 16 para MMLU em `configs/eval.yaml`; se a GPU
+usa batch 16 para Spider e batch 64 para MMLU em `configs/eval.yaml`; se a GPU
 continuar com folga, esses valores podem ser aumentados, e se houver OOM basta
 reduzi-los.
 

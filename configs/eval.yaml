@@ -9,14 +9,15 @@ paths:
 
 model:
   name: Qwen/Qwen2.5-3B-Instruct
-  profile: l4
+  profile: a100
   device_map: auto
+  torch_dtype: bf16
   attn_implementation: sdpa
 
 spider:
   split: dev
   few_shot_count: 3
-  eval_batch_size: 4
+  eval_batch_size: 16
   max_new_tokens: 256
   stop_sequences:
     - "\n\nExample"
@@ -35,7 +36,7 @@ mmlu:
   few_shot_split: dev
   total_questions: 150
   few_shot_count: 5
-  eval_batch_size: 16
+  eval_batch_size: 64
   max_new_tokens: 4
   categories:
     STEM:
