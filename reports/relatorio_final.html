@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Relatório Final - TP2 Fine-Tuning Text-to-SQL</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 13mm 15mm 13mm;
+    }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      color: #111;
+      font-size: 9.2pt;
+      line-height: 1.18;
+      margin: 0;
+      counter-reset: figure table;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-size: 17pt;
+      line-height: 1.05;
+      margin: 0 0 8px 0;
+      font-weight: 700;
+    }
+    .authors {
+      font-size: 10pt;
+      margin-bottom: 4px;
+    }
+    .course {
+      font-size: 8.4pt;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .abstract {
+      text-align: justify;
+      max-width: 178mm;
+      margin: 0 auto 8px auto;
+      font-size: 8.8pt;
+    }
+    .abstract strong {
+      font-style: italic;
+    }
+    main {
+      column-count: 2;
+      column-gap: 7mm;
+      column-fill: auto;
+    }
+    h2 {
+      font-size: 10.2pt;
+      text-transform: uppercase;
+      margin: 9px 0 4px 0;
+      break-after: avoid;
+    }
+    h3 {
+      font-size: 9.4pt;
+      margin: 7px 0 3px 0;
+      break-after: avoid;
+      font-style: italic;
+    }
+    p {
+      text-align: justify;
+      margin: 0 0 5px 0;
+    }
+    ul {
+      margin: 2px 0 5px 14px;
+      padding: 0;
+    }
+    li {
+      margin: 0 0 2px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 4px 0 6px 0;
+      font-size: 7.2pt;
+      break-inside: avoid;
+    }
+    th, td {
+      border: 0.5px solid #777;
+      padding: 2px 3px;
+      vertical-align: top;
+    }
+    th {
+      background: #eee;
+      text-align: center;
+      font-weight: 700;
+    }
+    td.num {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .wide {
+      column-span: all;
+      break-inside: avoid;
+      margin: 6px 0 8px 0;
+    }
+    .fig {
+      break-inside: avoid;
+      margin: 5px 0 7px 0;
+      text-align: center;
+    }
+    .fig img {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
+    .caption {
+      font-size: 7.6pt;
+      text-align: justify;
+      margin-top: 2px;
+    }
+    .caption::before {
+      counter-increment: figure;
+      content: "Fig. " counter(figure) ". ";
+      font-weight: 700;
+    }
+    .tcaption {
+      font-size: 7.6pt;
+      text-align: center;
+      margin: 3px 0 2px 0;
+      font-weight: 700;
+    }
+    .tcaption::before {
+      counter-increment: table;
+      content: "Tabela " counter(table) ". ";
+    }
+    code {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 7.8pt;
+    }
+    .small {
+      font-size: 7.0pt;
+    }
+    .note {
+      font-size: 7.9pt;
+      color: #222;
+    }
+    .refs p {
+      text-align: left;
+      margin-bottom: 3px;
+      font-size: 7.8pt;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Análise Quantitativa do Trade-off entre Especialização e Generalização em LLMs via Fine-Tuning Text-to-SQL</h1>
+  <div class="authors">Matheus - TP2 NLP / Text-to-SQL</div>
+  <div class="course">Universidade Federal do Amazonas - ICC220 / PPGINF528 - 2026/01</div>
+  <div class="abstract">
+    <p><strong>Resumo.</strong> Este trabalho implementa e avalia um pipeline reprodutível de fine-tuning supervisionado para Text-to-SQL usando o modelo <code>Qwen/Qwen2.5-3B-Instruct</code>, Spider como tarefa-alvo e MMLU como medida auxiliar de regressão de capacidade geral. O modelo base obteve 59,57% de Execution Accuracy no Spider dev e 57,33% no MMLU 150. Todos os adapters LoRA melhoraram Spider, com ganhos entre +6,58 e +9,19 pontos percentuais. O melhor resultado bruto de Spider foi o Exp G, com 68,76%. O melhor compromisso foi o Exp F, com 68,18% no Spider e a mesma acurácia MMLU da base. A análise mostra ganho real de especialização, regressão geral pequena e diferenças internas entre hiperparâmetros menores que o ganho contra a base.</p>
+    <p><strong>Palavras-chave.</strong> Text-to-SQL, Spider, MMLU, LoRA, Execution Accuracy, Qwen, fine-tuning.</p>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>1. Introdução</h2>
+    <p>O objetivo do TP é medir empiricamente o trade-off entre especialização e generalização em um LLM. A especialização foi medida por Text-to-SQL no Spider: dado um esquema de banco, uma pergunta em linguagem natural e exemplos few-shot, o modelo deve gerar uma consulta SQL executável. A generalização foi medida por uma suíte fixa de 150 questões MMLU, com 50 questões de STEM, 50 de Humanidades e 50 de Ciências Sociais.</p>
+    <p>A pergunta central é se o ganho em Text-to-SQL compensa uma possível perda em tarefas gerais. Para isso, o mesmo pipeline de avaliação foi aplicado ao modelo base e a todos os modelos fine-tuned. A conclusão é limitada ao modelo, aos dados, aos prompts, à seed e aos hiperparâmetros usados neste experimento.</p>
+  </section>
+
+  <section>
+    <h2>2. Metodologia</h2>
+    <h3>2.1 Modelo, dados e ambiente</h3>
+    <p>O modelo base foi <code>Qwen/Qwen2.5-3B-Instruct</code>. A execução final ocorreu em Google Colab com GPU NVIDIA A100-SXM4-40GB, Python 3.12.13, PyTorch 2.11.0+cu128, Transformers 4.57.6, PEFT 0.19.1, TRL 0.29.1, Datasets 4.8.5, DeepEval 3.9.9 e bitsandbytes 0.49.2. A seed global foi 42.</p>
+    <p>O Spider train foi usado apenas para fine-tuning e exemplos few-shot. O Spider dev completo, com 1034 exemplos, foi usado somente para avaliação final. A suíte MMLU contém exatamente 150 questões amostradas de forma determinística de <code>cais/mmlu</code>: <code>college_computer_science</code>, <code>philosophy</code> e <code>econometrics</code>, com 50 questões por categoria. O hash da suíte analisada foi <code>8fc4621b...</code>.</p>
+
+    <h3>2.2 Prompt e avaliação</h3>
+    <p>No Spider, o prompt de avaliação inclui instrução, esquema do banco-alvo, três exemplos few-shot retirados do Spider train e a pergunta final. O mesmo template foi aplicado ao baseline e a todos os adapters. A geração de avaliação foi determinística: greedy, <code>temperature=0</code>, <code>do_sample=false</code>. No MMLU, o prompt é 5-shot fixo por subcategoria e exige uma única alternativa A, B, C ou D.</p>
+
+    <h3>2.3 Métrica Execution Accuracy</h3>
+    <p>A métrica customizada <code>ExecutionAccuracy</code> herda de <code>deepeval.metrics.BaseMetric</code>. A saída bruta do modelo passa por extração robusta de SQL: remoção de markdown, localização do primeiro <code>SELECT</code> ou <code>WITH</code>, corte em ponto e vírgula ou marcadores de continuação como <code>Explanation</code>, <code>Schema:</code> e <code>Question:</code>. Consultas não seguras são bloqueadas.</p>
+    <p>A SQL prevista e a SQL gold são executadas em SQLite em modo read-only, com <code>PRAGMA query_only</code>, timeout e normalização de células. A comparação é insensível à ordem das linhas, exceto quando a consulta contém <code>ORDER BY</code>. A métrica retorna 1,0 se os resultados executados forem equivalentes e 0,0 em erro de sintaxe, erro de execução ou resultado diferente.</p>
+
+    <h3>2.4 Fine-tuning</h3>
+    <p>O treinamento usou LoRA em BF16, sem quantização, porque a A100 permitiu executar o modelo de 3B com folga após ajuste do microbatch. O dataset de treino foi formatado como <code>prompt</code> + <code>completion</code>, com loss apenas na completion e EOS <code>&lt;|im_end|&gt;</code>, evitando treinar o modelo para copiar o enunciado inteiro. Todas as configurações usaram batch efetivo 16, <code>max_seq_length=2048</code>, <code>adamw_torch_fused</code>, <code>warmup_ratio=0.03</code>, <code>weight_decay=0</code>, TF32 habilitado e <code>group_by_length=true</code>.</p>
+  </section>
+
+  <section class="wide">
+    <div class="tcaption">Configurações de LoRA avaliadas.</div>
+    <table class="small">
+      <thead>
+        <tr>
+          <th>Exp.</th><th>Target modules</th><th>LR</th><th>Épocas</th><th>Batch efetivo</th><th>r/alpha/dropout</th><th>Train loss</th><th>Runtime</th><th>Papel na análise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A</td><td><code>q_proj,v_proj</code></td><td class="num">1e-4</td><td class="num">1</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,309</td><td class="num">11,0 min</td><td>LoRA leve, referência conservadora.</td></tr>
+        <tr><td>B</td><td><code>q,k,v,o</code></td><td class="num">1e-4</td><td class="num">1</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,260</td><td class="num">14,0 min</td><td>Isola mais módulos com 1 época.</td></tr>
+        <tr><td>C</td><td><code>q,k,v,o</code></td><td class="num">1e-4</td><td class="num">2</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,199</td><td class="num">28,2 min</td><td>Mede segunda época em LR baixo.</td></tr>
+        <tr><td>D</td><td><code>q,k,v,o</code></td><td class="num">2e-4</td><td class="num">1</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,226</td><td class="num">14,2 min</td><td>LR maior com 1 época.</td></tr>
+        <tr><td>E</td><td><code>q_proj,v_proj</code></td><td class="num">1e-4</td><td class="num">2</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,240</td><td class="num">21,6 min</td><td>Segunda época para LoRA leve.</td></tr>
+        <tr><td>F</td><td><code>q,k,v,o</code></td><td class="num">2e-4</td><td class="num">2</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,168</td><td class="num">27,6 min</td><td>Melhor compromisso final.</td></tr>
+        <tr><td>G</td><td><code>q,k,v,o</code></td><td class="num">1e-4</td><td class="num">3</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,164</td><td class="num">41,3 min</td><td>Melhor Spider.</td></tr>
+        <tr><td>H</td><td><code>q,k,v,o</code></td><td class="num">2e-4</td><td class="num">3</td><td class="num">16</td><td class="num">16/32/0,05</td><td class="num">0,135</td><td class="num">41,7 min</td><td>LR maior por 3 épocas.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. Resultados</h2>
+    <p>A Tabela 2 resume o resultado final. Todos os fine-tuned melhoraram Spider em relação ao modelo base. O ganho absoluto variou de +6,58 a +9,19 pontos percentuais. No MMLU, as variações foram pequenas: de -3,33 p.p. no Exp A até 0,00 p.p. no Exp F.</p>
+  </section>
+
+  <section class="wide">
+    <div class="tcaption">Resultados finais em Spider dev e MMLU 150.</div>
+    <table class="small">
+      <thead>
+        <tr>
+          <th>Modelo</th><th>Spider EX</th><th>Corretas</th><th>Delta Spider</th><th>MMLU</th><th>Corretas</th><th>Delta MMLU</th><th>Variação relativa MMLU</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Base</td><td class="num">59,57%</td><td class="num">616/1034</td><td class="num">0,00 p.p.</td><td class="num">57,33%</td><td class="num">86/150</td><td class="num">0,00 p.p.</td><td class="num">0,00%</td></tr>
+        <tr><td>Exp A</td><td class="num">66,92%</td><td class="num">692/1034</td><td class="num">+7,35 p.p.</td><td class="num">54,00%</td><td class="num">81/150</td><td class="num">-3,33 p.p.</td><td class="num">-5,81%</td></tr>
+        <tr><td>Exp B</td><td class="num">66,15%</td><td class="num">684/1034</td><td class="num">+6,58 p.p.</td><td class="num">55,33%</td><td class="num">83/150</td><td class="num">-2,00 p.p.</td><td class="num">-3,49%</td></tr>
+        <tr><td>Exp C</td><td class="num">67,31%</td><td class="num">696/1034</td><td class="num">+7,74 p.p.</td><td class="num">56,00%</td><td class="num">84/150</td><td class="num">-1,33 p.p.</td><td class="num">-2,33%</td></tr>
+        <tr><td>Exp D</td><td class="num">66,92%</td><td class="num">692/1034</td><td class="num">+7,35 p.p.</td><td class="num">56,67%</td><td class="num">85/150</td><td class="num">-0,67 p.p.</td><td class="num">-1,16%</td></tr>
+        <tr><td>Exp E</td><td class="num">66,83%</td><td class="num">691/1034</td><td class="num">+7,25 p.p.</td><td class="num">56,00%</td><td class="num">84/150</td><td class="num">-1,33 p.p.</td><td class="num">-2,33%</td></tr>
+        <tr><td>Exp F</td><td class="num">68,18%</td><td class="num">705/1034</td><td class="num">+8,61 p.p.</td><td class="num">57,33%</td><td class="num">86/150</td><td class="num">0,00 p.p.</td><td class="num">0,00%</td></tr>
+        <tr><td>Exp G</td><td class="num">68,76%</td><td class="num">711/1034</td><td class="num">+9,19 p.p.</td><td class="num">56,67%</td><td class="num">85/150</td><td class="num">-0,67 p.p.</td><td class="num">-1,16%</td></tr>
+        <tr><td>Exp H</td><td class="num">68,57%</td><td class="num">709/1034</td><td class="num">+8,99 p.p.</td><td class="num">56,00%</td><td class="num">84/150</td><td class="num">-1,33 p.p.</td><td class="num">-2,33%</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="wide">
+    <div class="fig">
+      <img src="figures/fig1_accuracy.svg" alt="Acurácia final por modelo">
+      <div class="caption">Acurácia final em Spider e MMLU. As linhas pontilhadas indicam o baseline correspondente. A especialização em Spider é consistente; a regressão MMLU é pequena e, no Exp F, nula em acurácia agregada.</div>
+    </div>
+  </section>
+
+  <section>
+    <h3>3.1 Ganho em Spider</h3>
+    <p>O ganho contra a base é robusto. Em comparação pareada por exemplo, o Exp G corrige 157 casos que a base erra e erra 62 casos que a base acerta, saldo líquido de +95 exemplos. O Exp F tem saldo +89 e o Exp H saldo +93. Em teste binomial pareado sobre discordâncias, todos os LoRAs têm diferença contra a base com p-valor menor que 1e-5. Esses testes não substituem a análise experimental, mas mostram que o ganho não é explicado por poucas trocas isoladas.</p>
+
+    <h3>3.2 Regressão em MMLU</h3>
+    <p>O MMLU foi mais estável. O Exp F manteve 86/150, igual à base, embora com trocas internas: ganhou questões em Humanidades e perdeu algumas em STEM e Sociais. O Exp G perdeu apenas uma questão no total. Como a suíte tem 150 questões, uma questão equivale a 0,67 p.p.; portanto, diferenças de 1 a 3 questões entre configs devem ser interpretadas como evidência fraca, não como ranking fino de capacidade geral.</p>
+    <p>Uma análise da própria suíte reforça essa cautela: entre base e oito fine-tuned, 74 questões foram acertadas por todos os modelos e 58 foram erradas por todos. Apenas 18 questões diferenciaram os modelos. Assim, o MMLU 150 atende à especificação do TP e funciona como sanity check de regressão, mas não como uma estimativa completa do MMLU global.</p>
+  </section>
+
+  <section class="wide">
+    <div class="fig">
+      <img src="figures/fig2_tradeoff.svg" alt="Trade-off especialização vs generalização">
+      <div class="caption">Trade-off entre ganho Spider e variação MMLU. O quadrante mais desejável é à direita e próximo de zero no eixo vertical. O Exp F é o melhor compromisso; o Exp G maximiza Spider com perda MMLU de apenas uma questão.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Comparação de hiperparâmetros</h2>
+    <p>A comparação crítica precisa distinguir três níveis: todos os fine-tuned vencem a base; Exp F/G/H formam o grupo mais forte em Spider; e as diferenças internas entre configs são pequenas. A Tabela 3 mostra comparações pareadas relevantes. O sinal positivo favorece o segundo experimento da comparação.</p>
+  </section>
+
+  <section class="wide">
+    <div class="tcaption">Comparações pareadas entre hiperparâmetros em Spider.</div>
+    <table class="small">
+      <thead>
+        <tr><th>Comparação</th><th>Pergunta</th><th>Saldo pareado</th><th>Leitura</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>A vs B</td><td><code>q/v</code> contra <code>q/k/v/o</code>, 1 época, LR 1e-4</td><td class="num">-8 para B</td><td>A ficou ligeiramente acima, mas sem evidência forte.</td></tr>
+        <tr><td>E vs C</td><td><code>q/v</code> contra <code>q/k/v/o</code>, 2 épocas, LR 1e-4</td><td class="num">+5 para C</td><td>Mais módulos ajudam um pouco em 2 épocas, ainda frágil.</td></tr>
+        <tr><td>B vs C</td><td>1 para 2 épocas, <code>q/k/v/o</code>, LR 1e-4</td><td class="num">+12 para C</td><td>A segunda época melhorou Spider.</td></tr>
+        <tr><td>C vs G</td><td>2 para 3 épocas, <code>q/k/v/o</code>, LR 1e-4</td><td class="num">+15 para G</td><td>A terceira época elevou Spider e custou 1 questão MMLU.</td></tr>
+        <tr><td>D vs F</td><td>1 para 2 épocas, <code>q/k/v/o</code>, LR 2e-4</td><td class="num">+13 para F</td><td>O melhor compromisso veio de 2 épocas com LR maior.</td></tr>
+        <tr><td>F vs H</td><td>2 para 3 épocas, <code>q/k/v/o</code>, LR 2e-4</td><td class="num">+4 para H</td><td>Ganho Spider mínimo, com queda MMLU de 2 questões.</td></tr>
+        <tr><td>C vs F</td><td>LR 1e-4 contra 2e-4, 2 épocas</td><td class="num">+9 para F</td><td>LR maior foi melhor no ponto de 2 épocas.</td></tr>
+        <tr><td>G vs H</td><td>LR 1e-4 contra 2e-4, 3 épocas</td><td class="num">-2 para H</td><td>Em 3 épocas, LR 1e-4 foi ligeiramente superior.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="wide">
+    <div class="fig">
+      <img src="figures/fig3_epochs.svg" alt="Acurácia por épocas">
+      <div class="caption">Efeito de épocas e learning rate. Para <code>q/k/v/o</code>, mais épocas melhoraram Spider. Em LR 2e-4, a terceira época quase não aumentou Spider e reduziu MMLU. Em LR 1e-4, a terceira época produziu o melhor Spider.</div>
+    </div>
+  </section>
+
+  <section>
+    <p>O alvo dos módulos não produziu uma conclusão simples. Com 1 época e LR 1e-4, adaptar apenas <code>q/v</code> foi melhor em Spider que adaptar <code>q/k/v/o</code>, mas pior em MMLU. Com 2 épocas e LR 1e-4, <code>q/k/v/o</code> superou levemente <code>q/v</code> em Spider e empatou em MMLU. Portanto, não é correto afirmar que mais módulos sempre melhoram; o efeito depende de época e LR.</p>
+    <p>O fator mais consistente foi a duração do treino em <code>q/k/v/o</code>. De B para C para G, Spider subiu 66,15%, 67,31% e 68,76%. De D para F para H, subiu 66,92%, 68,18% e 68,57%. Ao mesmo tempo, o MMLU não caiu de forma monotônica: F igualou a base, H perdeu duas questões e G perdeu uma. A melhor narrativa é que, nestas condições, duas ou três épocas especializam melhor o modelo sem evidência de esquecimento catastrófico forte.</p>
+  </section>
+
+  <section>
+    <h2>5. Análise de erros</h2>
+    <p>A análise de erros foi feita principalmente no Exp G, por ser o melhor Spider. A Figura 4 mostra que o fine-tuning reduziu o total de erros e, especialmente, erros de execução. A base teve 163 <code>execution_error</code>; o Exp G teve 95 e o Exp H 76. O principal resíduo passou a ser <code>result_mismatch</code>, isto é, SQL executável mas semanticamente diferente da gold.</p>
+  </section>
+
+  <section class="wide">
+    <div class="fig">
+      <img src="figures/fig4_spider_errors.svg" alt="Erros Spider por categoria">
+      <div class="caption">Distribuição de erros Spider. O fine-tuning reduziu o total de falhas e tornou raros os erros de extração de SQL. O ganho principal veio de menos SQLs inválidas ou com colunas/tabelas inexistentes.</div>
+    </div>
+  </section>
+
+  <section>
+    <h3>5.1 Exemplos qualitativos</h3>
+    <p><strong>Coluna agregada em ordem diferente.</strong> Para "How many singers are from each country?", a gold era <code>SELECT country, count(*) FROM singer GROUP BY country</code>, enquanto o Exp G gerou <code>SELECT count(*), country FROM singer GROUP BY country</code>. A consulta captura a mesma agregação, mas troca a ordem das colunas, e a métrica por execução compara as tuplas resultantes.</p>
+    <p><strong>Interpretação incorreta de atributo.</strong> Para "What is the maximum capacity and the average of all stadiums?", a gold seleciona <code>max(capacity), average</code>. O modelo gerou <code>max(capacity), avg(average)</code>. Aqui há execução válida, mas uma decisão semântica diferente: o campo <code>average</code> é tratado como valor a agregar, não como coluna a retornar.</p>
+    <p><strong>Schema linking imperfeito.</strong> Em exemplos do banco <code>pets_1</code>, o modelo usou <code>pet_type</code>, mas a coluna correta no schema é <code>pettype</code>. Esse tipo de erro indica que o fine-tuning melhora o formato SQL, mas ainda falha em detalhes de ligação entre linguagem natural e nomes exatos do banco.</p>
+  </section>
+
+  <section>
+    <h2>6. Discussão</h2>
+    <h3>6.1 O ganho justifica a perda geral?</h3>
+    <p>Sim, nas configurações F e G. O Exp F aumentou Spider de 59,57% para 68,18%, ganho de +8,61 p.p., sem queda agregada no MMLU 150. O Exp G aumentou Spider para 68,76%, ganho de +9,19 p.p., perdendo apenas uma questão MMLU. Para a finalidade do TP, isso caracteriza especialização útil com regressão geral pequena. Para uso prático, o Exp F seria a escolha conservadora; o Exp G seria escolhido se a prioridade absoluta fosse Text-to-SQL.</p>
+
+    <h3>6.2 Fatores que influenciaram o trade-off</h3>
+    <p>O número de épocas e o learning rate tiveram efeito mais visível que a troca isolada de target modules. Aumentar de 1 para 2 épocas em <code>q/k/v/o</code> melhorou Spider tanto em LR 1e-4 quanto em LR 2e-4. A terceira época continuou ajudando em LR 1e-4, mas trouxe retorno marginal em LR 2e-4. O LR 2e-4 foi especialmente forte em 2 épocas, produzindo o Exp F. Já a comparação <code>q/v</code> contra <code>q/k/v/o</code> foi ambígua e não sustenta uma afirmação universal.</p>
+    <p>A loss de treino caiu com configurações mais longas, mas menor loss não implicou automaticamente melhor generalização. O Exp H teve menor loss, 0,135, mas não foi o melhor em Spider nem em MMLU. Isso é coerente com a hipótese de que, após certo ponto, o treino adicional especializa o formato sem necessariamente melhorar execução no dev.</p>
+
+    <h3>6.3 Implicações práticas</h3>
+    <p>Para LLMs comerciais especializados, os resultados sugerem que PEFT pode entregar ganhos relevantes em domínio com custo moderado e sem apagar capacidades gerais de forma evidente. Contudo, a decisão de produção não deve usar apenas média agregada. É necessário monitorar regressões por categoria, erros de segurança, SQLs inválidas, drift de formato e robustez em schemas não vistos. A escolha entre F e G ilustra uma decisão real: maximizar a tarefa-alvo ou escolher um ponto mais estável no trade-off.</p>
+  </section>
+
+  <section>
+    <h2>7. Reprodutibilidade e ameaças à validade</h2>
+    <p>A reprodutibilidade foi controlada por seeds fixas, configs YAML, suíte MMLU persistida, geração determinística e salvamento de métricas, predições, logs e ambiente. O README documenta os comandos para preparar dados, treinar adapters e executar benchmarks. Os resultados deste relatório foram obtidos diretamente dos artefatos em <code>outputs/</code>.</p>
+    <p>Há três ameaças principais à validade. Primeiro, Spider e MMLU são benchmarks públicos, e o modelo base pode ter visto parte desses dados no pré-treino. Isso afeta a interpretação absoluta das acurácias, embora a comparação relativa ainda seja controlada por usar o mesmo pipeline. Segundo, a suíte MMLU tem apenas 150 questões e três subcategorias, como exigido no TP; portanto, ela mede regressão de forma auxiliar, não o MMLU completo. Terceiro, a avaliação por execução é mais fiel que matching textual, mas ainda penaliza diferenças como ordem de colunas quando a saída SQL retorna tuplas com ordem distinta.</p>
+  </section>
+
+  <section>
+    <h2>8. Conclusão</h2>
+    <p>O pipeline cumpriu o objetivo do TP: avaliar um baseline, treinar múltiplas configurações LoRA no Spider train, avaliar todos os modelos no Spider dev e no MMLU 150, calcular ganhos e registrar artefatos reprodutíveis. O resultado principal é que LoRA especializou o modelo para Text-to-SQL de forma consistente. O melhor Spider foi o Exp G, com 68,76% de Execution Accuracy, +9,19 p.p. contra a base. O melhor compromisso foi o Exp F, com 68,18% em Spider e 57,33% em MMLU, igual ao baseline.</p>
+    <p>A hipótese de regressão de capacidade não foi fortemente confirmada. Houve pequenas perdas em algumas configurações, mas o MMLU variou em poucos exemplos. A conclusão mais imparcial é que, sob estas condições, o fine-tuning LoRA trouxe ganho claro na tarefa-alvo e apenas regressão fraca ou nula na medida geral usada.</p>
+  </section>
+
+  <section class="refs">
+    <h2>Referências</h2>
+    <p>[1] T. Yu et al. Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task.</p>
+    <p>[2] D. Hendrycks et al. Measuring Massive Multitask Language Understanding.</p>
+    <p>[3] E. Hu et al. LoRA: Low-Rank Adaptation of Large Language Models.</p>
+    <p>[4] Qwen Team. Qwen2.5 model family and model card for <code>Qwen/Qwen2.5-3B-Instruct</code>.</p>
+    <p>[5] Hugging Face. TRL, Transformers, PEFT and Datasets documentation.</p>
+    <p>[6] Confident AI. DeepEval documentation for custom metrics.</p>
+  </section>
+</main>
+</body>
+</html>
