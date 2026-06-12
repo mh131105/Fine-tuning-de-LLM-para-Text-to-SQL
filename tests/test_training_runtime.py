@@ -45,6 +45,8 @@ def test_validate_effective_batch_size_rejects_mismatch():
         "configs/train_lora_exp_d.yaml",
         "configs/train_lora_exp_e.yaml",
         "configs/train_lora_exp_f.yaml",
+        "configs/train_lora_exp_g.yaml",
+        "configs/train_lora_exp_h.yaml",
     ],
 )
 def test_lora_training_configs_have_valid_effective_batch_size(config_path):

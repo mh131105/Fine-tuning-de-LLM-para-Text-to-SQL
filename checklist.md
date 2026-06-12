@@ -58,6 +58,7 @@
 - [x] LoRA implementado via PEFT.
 - [x] QLoRA/T4 template implementado.
 - [x] Configs extras Exp E/F para segunda epoca de A e D implementadas.
+- [x] Configs extras Exp G/H para terceira epoca de LR 1e-4 vs 2e-4 implementadas.
 - [x] Salvamento de adapter, tokenizer, config, ambiente e logs implementado.
 - [ ] Treino real Exp A executado no Colab/GPU.
 - [ ] Treino real Exp B executado no Colab/GPU.

@@ -165,6 +165,18 @@ Treinar Experimento F, mesmo D com 2 epocas:
 python -m scripts.train --config configs/train_lora_exp_f.yaml
 ```
 
+Treinar Experimento G, mesmo C com 3 epocas:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_g.yaml
+```
+
+Treinar Experimento H, mesmo F com 3 epocas:
+
+```bash
+python -m scripts.train --config configs/train_lora_exp_h.yaml
+```
+
 Treinar todos os experimentos A/B/C/D:
 
 ```bash
@@ -175,6 +187,12 @@ Treinar somente os experimentos extras E/F:
 
 ```bash
 make train-extra
+```
+
+Treinar somente os experimentos de 3 epocas G/H:
+
+```bash
+make train-3epoch
 ```
 
 Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
@@ -221,6 +239,18 @@ Avaliar Exp F:
 
 ```bash
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_f
+```
+
+Avaliar Exp G:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_g
+```
+
+Avaliar Exp H:
+
+```bash
+python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_h
 ```
 
 Diagnostico Spider sem `stop_sequences` para investigar saidas vazias do Exp C:
@@ -275,6 +305,8 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 - `configs/train_lora_exp_d.yaml`: mesmo Exp B com LR `2e-4`, para testar se `1e-4` foi conservador.
 - `configs/train_lora_exp_e.yaml`: mesmo Exp A com 2 epocas, para medir efeito da segunda epoca em `q_proj/v_proj`.
 - `configs/train_lora_exp_f.yaml`: mesmo Exp D com 2 epocas, para medir efeito da segunda epoca com LR `2e-4`.
+- `configs/train_lora_exp_g.yaml`: mesmo Exp C com 3 epocas, LR `1e-4`.
+- `configs/train_lora_exp_h.yaml`: mesmo Exp F com 3 epocas, LR `2e-4`.
 - `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
 
 Todas as configs usam paths relativos.
