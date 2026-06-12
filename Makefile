@@ -1,7 +1,7 @@
 PYTHON ?= python3
 EXP_C_EPOCH1_CKPT ?= $(shell ls -d outputs/exp_c/checkpoint-* 2>/dev/null | sort -V | head -n 1)
 
-.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b train-c train-d train-all bench-base bench-a bench-b bench-c bench-d bench-all diagnose-exp-c-spider-nostop diagnose-exp-c-epoch1-spider-nostop diagnose-exp-c-nostop
+.PHONY: install test smoke smoke-mmlu prepare-spider prepare-mmlu train-a train-b train-c train-d train-e train-f train-all train-extra bench-base bench-a bench-b bench-c bench-d bench-e bench-f bench-all bench-extra diagnose-exp-c-spider-nostop diagnose-exp-c-epoch1-spider-nostop diagnose-exp-c-nostop
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -32,7 +32,15 @@ train-c:
 train-d:
 	$(PYTHON) -m scripts.train --config configs/train_lora_exp_d.yaml
 
+train-e:
+	$(PYTHON) -m scripts.train --config configs/train_lora_exp_e.yaml
+
+train-f:
+	$(PYTHON) -m scripts.train --config configs/train_lora_exp_f.yaml
+
 train-all: train-a train-b train-c train-d
+
+train-extra: train-e train-f
 
 bench-base:
 	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
@@ -49,7 +57,15 @@ bench-c:
 bench-d:
 	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_d
 
+bench-e:
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_e
+
+bench-f:
+	$(PYTHON) -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_f
+
 bench-all: bench-base bench-a bench-b bench-c bench-d
+
+bench-extra: bench-e bench-f
 
 diagnose-exp-c-spider-nostop:
 	$(PYTHON) -m scripts.evaluate_spider --config configs/eval_spider_nostop.yaml --model_path outputs/exp_c --output_dir outputs/diagnostics/exp_c_spider_nostop

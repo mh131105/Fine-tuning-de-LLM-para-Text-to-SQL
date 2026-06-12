@@ -57,6 +57,7 @@
 - [x] Carregamento de tokenizer/modelo implementado.
 - [x] LoRA implementado via PEFT.
 - [x] QLoRA/T4 template implementado.
+- [x] Configs extras Exp E/F para segunda epoca de A e D implementadas.
 - [x] Salvamento de adapter, tokenizer, config, ambiente e logs implementado.
 - [ ] Treino real Exp A executado no Colab/GPU.
 - [ ] Treino real Exp B executado no Colab/GPU.
