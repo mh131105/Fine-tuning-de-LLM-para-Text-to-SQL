@@ -1,6 +1,6 @@
 # TP2 NLP - Fine-Tuning Text-to-SQL
 
-Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA do `Qwen/Qwen2.5-3B-Instruct`.
+Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA do `Qwen/Qwen2.5-3B-Instruct`, com template QLoRA economico para fallback em T4.
 
 O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos fixos. Treino e inferencia reais baixam modelo grande e devem ser executados por voce em GPU.
 
@@ -9,7 +9,7 @@ O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos
 - prepara Spider train/dev e schemas de bancos SQLite;
 - prepara uma suite fixa de MMLU com 150 questoes;
 - avalia modelo base em Spider dev por Execution Accuracy;
-- treina configuracoes LoRA no Spider train;
+- treina configuracoes LoRA no Spider train e inclui template QLoRA economico para T4;
 - avalia modelos fine-tuned em Spider dev e MMLU;
 - calcula ganho no Spider e variacao no MMLU contra baseline;
 - salva predicoes JSONL, metricas JSON, logs, ambiente e summaries Markdown;
@@ -77,6 +77,82 @@ gradient_checkpointing: false
 
 Se a A100 ainda acusar OOM, ative `gradient_checkpointing: true` mantendo o
 batch efetivo 16, ou reduza temporariamente o batch efetivo para 8.
+
+## Configuracao economica para T4
+
+As configs A-H do relatorio foram ajustadas para A100. Para rodar em uma T4,
+priorize caber na VRAM, mesmo que o treino fique muito mais lento. Use o template
+`configs/train_qlora_t4_template.yaml` como ponto de partida:
+
+```bash
+python -m scripts.train --config configs/train_qlora_t4_template.yaml
+```
+
+Hiperparametros recomendados para o modo mais economico:
+
+```yaml
+model:
+  profile: t4
+  device_map: auto
+  attn_implementation: sdpa
+  quantization: qlora_4bit
+
+training:
+  method: qlora
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 16
+  effective_batch_size: 16
+  max_seq_length: 1024
+  bf16: false
+  fp16: true
+  gradient_checkpointing: true
+  optim: adamw_torch
+
+lora:
+  r: 8
+  lora_alpha: 16
+  target_modules:
+    - q_proj
+    - v_proj
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_compute_dtype: float16
+```
+
+O que mais economiza VRAM:
+
+- `load_in_4bit: true`: carrega o modelo base quantizado em 4 bits.
+- `per_device_train_batch_size: 1`: menor microbatch possivel.
+- `gradient_checkpointing: true`: troca tempo por memoria.
+- `target_modules` apenas `q_proj` e `v_proj`: menos parametros LoRA treinaveis.
+- `lora.r: 8`: reduz ainda mais os parametros treinaveis do adapter.
+- `fp16: true` e `bf16: false`: T4 nao tem o mesmo suporte pratico a BF16 da A100.
+- `max_seq_length: 1024`: reduz bastante memoria; se houver folga e qualidade for prioridade, teste `1536` ou `2048`.
+
+O que evitar na T4 quando a prioridade e economia:
+
+- microbatch maior que 1;
+- `q_proj/k_proj/v_proj/o_proj` se `q_proj/v_proj` ja atende ao experimento;
+- `target_modules: all-linear`;
+- LoRA rank maior que 16;
+- sequencia 4096;
+- mais de uma avaliacao em paralelo com batch alto.
+
+Se o treino ainda falhar por memoria, a ordem mais segura de reducao e:
+
+```text
+1. max_seq_length: 1024 -> 768
+2. lora.r: 8 -> 4 e lora_alpha: 16 -> 8
+3. gradient_accumulation_steps: manter ou aumentar; isso afeta tempo, nao aumenta VRAM relevante
+4. eval_batch_size em configs/eval.yaml: Spider 16 -> 4 -> 1; MMLU 64 -> 16 -> 4
+```
+
+Essa configuracao T4 e um fallback operacional. Os resultados finais do relatorio
+foram gerados com LoRA BF16 em A100, entao nao misture metricas obtidas com T4/QLoRA
+na mesma comparacao sem documentar a diferenca de configuracao.
 
 ## Dados
 
@@ -213,6 +289,7 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 - `configs/train_lora_exp_f.yaml`: mesmo Exp D com 2 epocas, para medir efeito da segunda epoca com LR `2e-4`.
 - `configs/train_lora_exp_g.yaml`: mesmo Exp C com 3 epocas, LR `1e-4`.
 - `configs/train_lora_exp_h.yaml`: mesmo Exp F com 3 epocas, LR `2e-4`.
+- `configs/train_qlora_t4_template.yaml`: template economico para T4 com QLoRA 4-bit.
 
 Todas as configs usam paths relativos.
 
