@@ -1,6 +1,6 @@
 # TP2 NLP - Fine-Tuning Text-to-SQL
 
-Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA/QLoRA do `Qwen/Qwen2.5-3B-Instruct`.
+Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA do `Qwen/Qwen2.5-3B-Instruct`.
 
 O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos fixos. Treino e inferencia reais baixam modelo grande e devem ser executados por voce em GPU.
 
@@ -9,7 +9,7 @@ O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos
 - prepara Spider train/dev e schemas de bancos SQLite;
 - prepara uma suite fixa de MMLU com 150 questoes;
 - avalia modelo base em Spider dev por Execution Accuracy;
-- treina dois experimentos LoRA/QLoRA no Spider train;
+- treina configuracoes LoRA no Spider train;
 - avalia modelos fine-tuned em Spider dev e MMLU;
 - calcula ganho no Spider e variacao no MMLU contra baseline;
 - salva predicoes JSONL, metricas JSON, logs, ambiente e summaries Markdown;
@@ -26,7 +26,7 @@ tests/               unitarios e smoke tests com mocks
 notebooks/           runner Colab sem logica exclusiva
 data/                dados locais ignorados pelo Git
 outputs/             resultados locais ignorados pelo Git
-reports/             notas para o relatorio final
+reports/             relatorio final, figuras e notebook executado
 ```
 
 ## Instalacao
@@ -129,70 +129,31 @@ Preparar MMLU 150:
 python -m scripts.prepare_mmlu --config configs/eval.yaml
 ```
 
-Treinar Experimento A:
+Treinar um experimento especifico:
 
 ```bash
 python -m scripts.train --config configs/train_lora_exp_a.yaml
 ```
 
-Treinar Experimento B:
+As configs finais avaliadas no relatorio sao:
+
+| Exp | Config | Target modules | LR | Epocas |
+| --- | --- | --- | --- | --- |
+| A | `configs/train_lora_exp_a.yaml` | `q_proj`, `v_proj` | `1e-4` | 1 |
+| B | `configs/train_lora_exp_b.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `1e-4` | 1 |
+| C | `configs/train_lora_exp_c.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `1e-4` | 2 |
+| D | `configs/train_lora_exp_d.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `2e-4` | 1 |
+| E | `configs/train_lora_exp_e.yaml` | `q_proj`, `v_proj` | `1e-4` | 2 |
+| F | `configs/train_lora_exp_f.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `2e-4` | 2 |
+| G | `configs/train_lora_exp_g.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `1e-4` | 3 |
+| H | `configs/train_lora_exp_h.yaml` | `q_proj`, `k_proj`, `v_proj`, `o_proj` | `2e-4` | 3 |
+
+Para treinar todos A-H em sequencia:
 
 ```bash
-python -m scripts.train --config configs/train_lora_exp_b.yaml
-```
-
-Treinar Experimento C:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_c.yaml
-```
-
-Treinar Experimento D, diagnostico de LR mais alto:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_d.yaml
-```
-
-Treinar Experimento E, mesmo A com 2 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_e.yaml
-```
-
-Treinar Experimento F, mesmo D com 2 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_f.yaml
-```
-
-Treinar Experimento G, mesmo C com 3 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_g.yaml
-```
-
-Treinar Experimento H, mesmo F com 3 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_h.yaml
-```
-
-Treinar todos os experimentos A/B/C/D:
-
-```bash
-make train-all
-```
-
-Treinar somente os experimentos extras E/F:
-
-```bash
-make train-extra
-```
-
-Treinar somente os experimentos de 3 epocas G/H:
-
-```bash
-make train-3epoch
+for exp in a b c d e f g h; do
+  python -m scripts.train --config "configs/train_lora_exp_${exp}.yaml"
+done
 ```
 
 Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
@@ -205,72 +166,18 @@ Avaliar baseline:
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
 ```
 
-Avaliar Exp A:
+Avaliar um experimento:
 
 ```bash
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_a
 ```
 
-Avaliar Exp B:
+Para avaliar todos A-H em sequencia:
 
 ```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
-```
-
-Avaliar Exp C:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
-```
-
-Avaliar Exp D:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_d
-```
-
-Avaliar Exp E:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_e
-```
-
-Avaliar Exp F:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_f
-```
-
-Avaliar Exp G:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_g
-```
-
-Avaliar Exp H:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_h
-```
-
-Diagnostico Spider sem `stop_sequences` para investigar saidas vazias do Exp C:
-
-```bash
-python -m scripts.evaluate_spider \
-  --config configs/eval_spider_nostop.yaml \
-  --model_path outputs/exp_c \
-  --output_dir outputs/diagnostics/exp_c_spider_nostop
-```
-
-Avaliar o primeiro checkpoint salvo do Exp C, que corresponde ao fim da primeira
-epoca:
-
-```bash
-EXP_C_EPOCH1_CKPT="$(ls -d outputs/exp_c/checkpoint-* | sort -V | head -n 1)"
-python -m scripts.evaluate_spider \
-  --config configs/eval_spider_nostop.yaml \
-  --model_path "$EXP_C_EPOCH1_CKPT" \
-  --output_dir outputs/diagnostics/exp_c_epoch1_spider_nostop
+for exp in a b c d e f g h; do
+  python -m scripts.run_benchmarks --config configs/eval.yaml --model_path "outputs/exp_${exp}"
+done
 ```
 
 As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
@@ -298,7 +205,6 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 ## Configuracoes
 
 - `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica, batch de avaliacao e SQLite timeout.
-- `configs/eval_spider_nostop.yaml`: diagnostico Spider sem `stop_sequences`, para separar erro real de EOS/stopping de corte prematuro da saida.
 - `configs/train_lora_exp_a.yaml`: LoRA leve, `q_proj/v_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_b.yaml`: LoRA medio, `q_proj/k_proj/v_proj/o_proj`, LR `1e-4`, 1 epoca.
 - `configs/train_lora_exp_c.yaml`: mesmo Exp B com 2 epocas para medir efeito da segunda epoca.
@@ -307,7 +213,6 @@ Esse modo usa as respostas gold como saida do "modelo" e serve apenas para valid
 - `configs/train_lora_exp_f.yaml`: mesmo Exp D com 2 epocas, para medir efeito da segunda epoca com LR `2e-4`.
 - `configs/train_lora_exp_g.yaml`: mesmo Exp C com 3 epocas, LR `1e-4`.
 - `configs/train_lora_exp_h.yaml`: mesmo Exp F com 3 epocas, LR `2e-4`.
-- `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
 
 Todas as configs usam paths relativos.
 
