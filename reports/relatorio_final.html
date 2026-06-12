@@ -292,12 +292,13 @@
   <section>
     <h2>5. Análise de erros</h2>
     <p>A análise de erros foi feita principalmente no Exp G, por ser o melhor Spider. A Figura 4 mostra que o fine-tuning reduziu o total de erros e, especialmente, erros de execução. A base teve 163 <code>execution_error</code>; o Exp G teve 95 e o Exp H 76. O principal resíduo passou a ser <code>result_mismatch</code>, isto é, SQL executável mas semanticamente diferente da gold.</p>
+    <p>Há um padrão adicional importante: conforme o treinamento fica mais forte, parte dos erros deixa de ser falha de execução e passa a ser falha de resultado. Na base, 39,0% dos erros eram <code>execution_error</code>. Nos experimentos F, G e H, essa proporção caiu para 25,8%, 29,4% e 23,4%, respectivamente. Ao mesmo tempo, a fração de <code>result_mismatch</code> subiu para 74,2%, 70,6% e 76,6%. A leitura é que os adapters mais treinados aprendem melhor o formato SQL e nomes do schema, mas ainda erram a composição semântica exata da consulta.</p>
   </section>
 
   <section class="wide">
     <div class="fig">
       <img src="figures/fig4_spider_errors.svg" alt="Erros Spider por categoria">
-      <div class="caption">Distribuição de erros Spider. O fine-tuning reduziu o total de falhas e tornou raros os erros de extração de SQL. O ganho principal veio de menos SQLs inválidas ou com colunas/tabelas inexistentes.</div>
+      <div class="caption">Distribuição de erros Spider. O fine-tuning reduziu o total de falhas e deslocou parte dos erros de execução para erros de resultado. Isso sugere melhora de validade SQL/schema linking, mas persistência de erros semânticos.</div>
     </div>
   </section>
 
@@ -316,15 +317,20 @@
     <h3>6.2 Fatores que influenciaram o trade-off</h3>
     <p>O número de épocas e o learning rate tiveram efeito mais visível que a troca isolada de target modules. Aumentar de 1 para 2 épocas em <code>q/k/v/o</code> melhorou Spider tanto em LR 1e-4 quanto em LR 2e-4. A terceira época continuou ajudando em LR 1e-4, mas trouxe retorno marginal em LR 2e-4. O LR 2e-4 foi especialmente forte em 2 épocas, produzindo o Exp F. Já a comparação <code>q/v</code> contra <code>q/k/v/o</code> foi ambígua e não sustenta uma afirmação universal.</p>
     <p>A loss de treino caiu com configurações mais longas, mas menor loss não implicou automaticamente melhor generalização. O Exp H teve menor loss, 0,135, mas não foi o melhor em Spider nem em MMLU. Isso é coerente com a hipótese de que, após certo ponto, o treino adicional especializa o formato sem necessariamente melhorar execução no dev.</p>
+    <p>A composição dos erros reforça essa interpretação. As configurações mais fortes em <code>q/k/v/o</code>, especialmente com LR 2e-4 e duas ou três épocas, reduziram erros como coluna inexistente e tabela inexistente. Porém, os erros restantes passaram a ser majoritariamente <code>result_mismatch</code>. Isso indica que o treinamento melhorou a aderência ao schema antes de resolver completamente planejamento relacional, escolha de joins, agregações e filtros.</p>
 
-    <h3>6.3 Implicações práticas</h3>
+    <h3>6.3 Possível contaminação dos benchmarks</h3>
+    <p>Como Spider e MMLU são benchmarks públicos, não é possível provar, apenas pelos artefatos deste trabalho, que o modelo base nunca viu exemplos semelhantes durante pré-treino ou instrução. Ainda assim, os dados obtidos não mostram um sinal forte de contaminação específica do nosso pipeline. O Spider dev não foi usado no treinamento, os exemplos few-shot vieram do Spider train, e a mesma avaliação foi aplicada à base e aos adapters. Além disso, os fine-tuned alteraram substancialmente o comportamento da base e produziram ganhos pareados, o que sugere aprendizado adicional do Spider train, não apenas reprodução estática de respostas já conhecidas.</p>
+    <p>No MMLU, o padrão também não aponta para memorização seletiva causada pelo fine-tuning: 74 questões foram acertadas por todos os modelos e 58 erradas por todos, restando apenas 18 questões discriminativas. Esse comportamento é compatível com uma suíte pequena e com diferenças marginais entre modelos, não com evidência clara de que o adapter tenha memorizado a avaliação. A conclusão conservadora é que não há evidência experimental de contaminação dentro do pipeline executado; a possibilidade de exposição prévia do modelo base a benchmarks públicos permanece uma incerteza externa e deve limitar interpretações absolutas das acurácias.</p>
+
+    <h3>6.4 Implicações práticas</h3>
     <p>Para LLMs comerciais especializados, os resultados sugerem que PEFT pode entregar ganhos relevantes em domínio com custo moderado e sem apagar capacidades gerais de forma evidente. Contudo, a decisão de produção não deve usar apenas média agregada. É necessário monitorar regressões por categoria, erros de segurança, SQLs inválidas, drift de formato e robustez em schemas não vistos. A escolha entre F e G ilustra uma decisão real: maximizar a tarefa-alvo ou escolher um ponto mais estável no trade-off.</p>
   </section>
 
   <section>
-    <h2>7. Reprodutibilidade e ameaças à validade</h2>
+    <h2>7. Reprodutibilidade e limitações</h2>
     <p>A reprodutibilidade foi controlada por seeds fixas, configs YAML, suíte MMLU persistida, geração determinística e salvamento de métricas, predições, logs e ambiente. O README documenta os comandos para preparar dados, treinar adapters e executar benchmarks. Os resultados deste relatório foram obtidos diretamente dos artefatos em <code>outputs/</code>.</p>
-    <p>Há três ameaças principais à validade. Primeiro, Spider e MMLU são benchmarks públicos, e o modelo base pode ter visto parte desses dados no pré-treino. Isso afeta a interpretação absoluta das acurácias, embora a comparação relativa ainda seja controlada por usar o mesmo pipeline. Segundo, a suíte MMLU tem apenas 150 questões e três subcategorias, como exigido no TP; portanto, ela mede regressão de forma auxiliar, não o MMLU completo. Terceiro, a avaliação por execução é mais fiel que matching textual, mas ainda penaliza diferenças como ordem de colunas quando a saída SQL retorna tuplas com ordem distinta.</p>
+    <p>A principal limitação é o escopo da avaliação de generalização. A suíte MMLU tem 150 questões e três subcategorias, como exigido no TP. Portanto, a baixa degradação observada no MMLU deve ser interpretada apenas para esse cenário específico, não como garantia ampla de preservação de capacidade geral. Além disso, as configurações de treino foram deliberadamente conservadoras: LoRA de rank 16, poucos módulos de atenção, batch efetivo fixo e no máximo três épocas. Configurações mais agressivas, mais longas ou com mais módulos poderiam produzir trade-offs diferentes.</p>
   </section>
 
   <section>
