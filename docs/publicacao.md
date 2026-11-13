@@ -52,7 +52,3 @@ SELECT count(*) FROM singer
 A execução dessa consulta em um SQLite de teste com três registros retornou `[(3,)]`, o resultado esperado. O [registro do teste](../reports/evaluation/hub-inference-test.json) conserva as versões, a revisão do adapter e a revisão da base usada **nesta verificação** (`aa8e72537993ba99e69dfaafa59ed015b17504d1`). Essa revisão da base não pode ser atribuída retroativamente ao treino original, que não a registrou.
 
 Esse teste zero-shot verifica download, carregamento e inferência; não substitui os benchmarks originais. Os 51 testes leves do repositório também passaram. O auditor de evidências conferiu os 40 arquivos originais recuperados, a suíte e os agregados E–H e do notebook.
-
-## Revisão da documentação
-
-A revisão [`43cd94a450708bf4d9878bf3dff56145eb5bce2c`](https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f/commit/43cd94a450708bf4d9878bf3dff56145eb5bce2c) atualiza a model card para redação impessoal e o hash correspondente no manifesto. Os pesos, a configuração do adapter e os resultados permanecem idênticos aos da publicação original. Os exemplos de reprodução apontam para essa revisão; os registros dos testes anteriores conservam a revisão efetivamente verificada.
