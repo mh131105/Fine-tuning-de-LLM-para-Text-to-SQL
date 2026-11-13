@@ -48,7 +48,8 @@ Na raiz do repositório, em um ambiente Python com memória suficiente para a ba
 ```sh
 python -m pip install -r requirements-inference.txt
 python examples/infer_exp_f.py \
-  --adapter mh131105/qwen2.5-3b-text-to-sql-lora-exp-f
+  --adapter mh131105/qwen2.5-3b-text-to-sql-lora-exp-f \
+  --revision 7ed0a9d2531a74c3d63e35f1e273ee1199889e26
 ```
 
 O exemplo carrega a base e o adapter e gera SQL para uma pergunta e um esquema pequenos. Para fixar o artefato, use `--revision` com o commit do Hub; `--device cuda`, `--device mps` ou `--device cpu` escolhe o dispositivo. A demonstração de inferência não substitui a avaliação Spider com três exemplos few-shot. Os detalhes de validação do upload ficam em [publicação](docs/publicacao.md).

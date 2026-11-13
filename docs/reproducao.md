@@ -101,13 +101,14 @@ from huggingface_hub import snapshot_download
 
 snapshot_download(
     repo_id="mh131105/qwen2.5-3b-text-to-sql-lora-exp-f",
+    revision="7ed0a9d2531a74c3d63e35f1e273ee1199889e26",
     local_dir="outputs/exp_f/adapter",
     allow_patterns=["adapter_config.json", "adapter_model.safetensors"],
 )
 PY
 ```
 
-Para fixar a reprodução, acrescente `revision="COMMIT_DO_HUB"` à chamada usando o commit registrado em [publicação](publicacao.md). Confira que o download contém a configuração e os pesos antes de avaliar:
+A chamada fixa a revisão publicada do adapter, registrada em [publicação](publicacao.md). A revisão imutável da base usada no treino original não foi registrada. Confira que o download contém a configuração e os pesos antes de avaliar:
 
 ```sh
 python - <<'PY'

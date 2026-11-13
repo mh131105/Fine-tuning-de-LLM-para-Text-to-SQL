@@ -53,7 +53,7 @@ Ele confere tamanhos e hashes dos arquivos com o [manifesto das fontes](../repor
 
 O hash de questões usa o algoritmo original de `src/preparation.py`, baseado nos dicionários das 150 questões. Ele depende da serialização original e não cobre os few-shot. A auditoria verifica a presença de cinco exemplos por subcategoria; ela não demonstra, por esse hash, que todos os bytes dos prompts foram os usados na execução original. As predições preservam hashes dos prompts, sem o texto integral de cada prompt.
 
-Esta conferência reaplica a agregação dos scores e a comparação dos rótulos salvos. A revisão não reexecutou os modelos, as SQLs originais ou uma nova avaliação de desempenho. Faltam as predições finais da base e de A–D. Assim, os testes binomiais pareados e as contagens 74/58/18 da seção 3 do relatório permanecem como análises originais, com auditoria independente pendente. Os agregados desses modelos continuam conferíveis no notebook.
+Esta conferência reaplica a agregação dos scores e a comparação dos rótulos salvos. A auditoria de evidências não repetiu a inferência de benchmark, as SQLs originais ou uma nova avaliação de desempenho. O teste funcional do artefato publicado é documentado em [publicação](publicacao.md). Faltam as predições finais da base e de A–D. Assim, os testes binomiais pareados e as contagens 74/58/18 da seção 3 do relatório permanecem como análises originais, com auditoria independente pendente. Os agregados desses modelos continuam conferíveis no notebook.
 
 ## Correções de apresentação e cuidados de reprodução
 

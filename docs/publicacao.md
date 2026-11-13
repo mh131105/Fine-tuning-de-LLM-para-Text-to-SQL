@@ -25,7 +25,7 @@ O diretório final de tokenizer do backup estava vazio. Para disponibilizar o to
 
 Os metadados usam `base_model`, `base_model_relation: adapter`, `library_name: peft`, `pipeline_tag: text-generation`, idioma inglês e fonte de treino `dreamerdeo/multispider`. A licença é `other`, com `license_name: qwen-research` e `license_link: LICENSE`, conforme o formato aceito pelo Hub. Não rotulei a suíte parcial como resultado do benchmark MMLU completo nos metadados de leaderboard.
 
-Não publiquei estados de otimizador, pickles de argumentos, checkpoints intermediários ou credenciais. A autenticação usa a sessão existente do Hugging Face, fora dos arquivos do projeto.
+Não publiquei estados de otimizador, pickles de argumentos, checkpoints intermediários ou credenciais. A autenticação usa a CLI do Hugging Face autenticada pelo autor, fora dos arquivos versionados.
 
 ## Licenças e referências
 
@@ -39,4 +39,16 @@ Referências adicionais: [Spider, Yu et al.](https://aclanthology.org/D18-1425/)
 
 ## Verificação da publicação
 
-O registro de download, integridade e inferência após o upload será acrescentado aqui ao concluir a publicação. Essa verificação funcional não substitui os benchmarks originais.
+Publiquei os arquivos na revisão [`7ed0a9d2531a74c3d63e35f1e273ee1199889e26`](https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f/commit/7ed0a9d2531a74c3d63e35f1e273ee1199889e26).
+
+Baixei a revisão publicada sem autenticação e conferi tamanho e SHA-256 dos 18 arquivos listados no manifesto, incluindo os pesos originais. O Hub contém também o próprio manifesto e o `.gitattributes` gerado pela plataforma. Validei o carregamento da configuração PEFT, os 288 tensores (7.372.800 parâmetros) e os metadados da model card. O [registro de integridade](../reports/evaluation/hub-verification.json) preserva essa conferência.
+
+Em 13 de novembro de 2026, carreguei a revisão publicada com PEFT e executei o [exemplo de inferência](../examples/infer_exp_f.py) em MPS/float16. Para `How many singers are there?`, no esquema `singer(singer_id, name, country)`, o modelo gerou:
+
+```sql
+SELECT count(*) FROM singer
+```
+
+Executei essa consulta em um SQLite de teste com três registros e obtive `[(3,)]`, o resultado esperado. O [registro do teste](../reports/evaluation/hub-inference-test.json) conserva as versões, a revisão do adapter e a revisão da base usada **nesta verificação** (`aa8e72537993ba99e69dfaafa59ed015b17504d1`). Essa revisão da base não pode ser atribuída retroativamente ao treino original, que não a registrou.
+
+Esse teste zero-shot verifica download, carregamento e inferência; não substitui os benchmarks originais. Os 51 testes leves do repositório também passaram. O auditor de evidências conferiu os 40 arquivos originais recuperados, a suíte e os agregados E–H e do notebook.
