@@ -1,10 +1,10 @@
 # Reprodução e uso do adapter
 
-O [README](../README.md) apresenta os resultados. Aqui reúno os comandos para usar o adapter escolhido, avaliar os mesmos arquivos ou repetir o treinamento. Execute-os na raiz do repositório.
+O [README](../README.md) apresenta os resultados. Este documento reúne os comandos para usar o adapter selecionado, avaliar os mesmos arquivos ou repetir o treinamento. Os comandos devem ser executados na raiz do repositório.
 
 ## Ambiente
 
-Executei os experimentos finais no Google Colab com NVIDIA A100-SXM4-40GB, Python 3.12.13, PyTorch 2.11.0+cu128, Transformers 4.57.6, PEFT 0.19.1, TRL 0.29.1, Datasets 4.8.5 e DeepEval 3.9.9. As configurações A–H usam LoRA BF16 sem quantização, batch efetivo 16 e seed 42.
+Os experimentos finais foram executados no Google Colab com NVIDIA A100-SXM4-40GB, Python 3.12.13, PyTorch 2.11.0+cu128, Transformers 4.57.6, PEFT 0.19.1, TRL 0.29.1, Datasets 4.8.5 e DeepEval 3.9.9. As configurações A–H usam LoRA BF16 sem quantização, batch efetivo 16 e seed 42.
 
 O [`requirements.txt`](../requirements.txt) registra as dependências do pipeline, mas mantém o PyTorch do runtime. Em uma máquina nova, instale antes uma versão do [PyTorch compatível com seu ambiente](https://pytorch.org/get-started/locally/). Para reproduzir o ambiente reportado, use Linux/CUDA e uma A100. O template T4/QLoRA é uma alternativa operacional e não corresponde aos experimentos finais.
 
@@ -15,7 +15,7 @@ cd Fine-tuning-de-LLM-para-Text-to-SQL
 python -m pip install -r requirements.txt
 ```
 
-O [runner Colab atual](../notebooks/colab_runner.ipynb) orquestra essas CLIs. O [notebook executado arquivado](../notebooks/archive/colab_runner_executed.ipynb) registra a execução histórica; seus comandos de clone e branch pertencem à época em que o repositório tinha outro nome. Preservei suas saídas.
+O [runner Colab atual](../notebooks/colab_runner.ipynb) orquestra essas CLIs. O [notebook executado arquivado](../notebooks/archive/colab_runner_executed.ipynb) registra a execução histórica; seus comandos de clone e branch pertencem à época em que o repositório tinha outro nome. Suas saídas foram preservadas.
 
 Use `HF_TOKEN` no ambiente ou nos segredos do Colab se precisar de acesso autenticado ao Hub. Não grave o token em código, configurações ou arquivos versionados.
 
@@ -82,7 +82,7 @@ Para criar outra suíte a partir do dataset `cais/mmlu`:
 python -m scripts.prepare_mmlu --config configs/eval.yaml
 ```
 
-Esse comando escreve no mesmo caminho. Preserve a suíte anterior antes de executá-lo. A seed controla a amostragem, mas a reprodução exata também depende da versão e da ordem dos registros obtidos da fonte; por isso disponibilizo o arquivo persistido.
+Esse comando escreve no mesmo caminho. Preserve a suíte anterior antes de executá-lo. A seed controla a amostragem, mas a reprodução exata também depende da versão e da ordem dos registros obtidos da fonte; por isso o arquivo persistido está disponível no repositório.
 
 ## Avaliar o baseline e o Exp F sem retreinar
 
@@ -101,7 +101,7 @@ from huggingface_hub import snapshot_download
 
 snapshot_download(
     repo_id="mh131105/qwen2.5-3b-text-to-sql-lora-exp-f",
-    revision="7ed0a9d2531a74c3d63e35f1e273ee1199889e26",
+    revision="43cd94a450708bf4d9878bf3dff56145eb5bce2c",
     local_dir="outputs/exp_f/adapter",
     allow_patterns=["adapter_config.json", "adapter_model.safetensors"],
 )
@@ -139,7 +139,7 @@ python -m scripts.run_benchmarks \
   --config configs/eval.yaml --model_path outputs/exp_f
 ```
 
-O treino usa Spider train, loss apenas na completion, EOS `<|im_end|>`, rank 16, alpha 32, dropout 0,05, módulos `q/k/v/o`, learning rate `2e-4`, duas épocas, sequência máxima 2048 e batch efetivo 16. Não usa o Spider dev para atualizar pesos. Comparei as configurações no dev para escolher F; ele não é um teste independente após a seleção.
+O treino usa Spider train, loss apenas na completion, EOS `<|im_end|>`, rank 16, alpha 32, dropout 0,05, módulos `q/k/v/o`, learning rate `2e-4`, duas épocas, sequência máxima 2048 e batch efetivo 16. Não usa o Spider dev para atualizar pesos. A comparação das configurações no dev orientou a seleção de F; esse conjunto não é um teste independente após a seleção.
 
 As configurações A–H seguem o padrão `configs/train_lora_exp_<letra>.yaml`. Para repetir G, por exemplo:
 

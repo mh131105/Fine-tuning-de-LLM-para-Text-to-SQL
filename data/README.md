@@ -1,6 +1,6 @@
 # Dados locais
 
-Uso Spider train para fine-tuning e para os exemplos few-shot, Spider dev para avaliação e uma suíte MMLU de 150 questões como medida auxiliar de regressão. Os arquivos de runtime em `raw/` e `processed/` ficam fora do Git.
+O projeto utiliza Spider train para fine-tuning e para os exemplos few-shot, Spider dev para avaliação e uma suíte MMLU de 150 questões como medida auxiliar de regressão. Os arquivos de runtime em `raw/` e `processed/` ficam fora do Git.
 
 ## Spider
 
@@ -27,7 +27,7 @@ Para importar um acervo local, acrescente `--source_path /caminho/spider.zip`. A
 
 ## Suíte MMLU persistida
 
-Preservei a suíte final em [`reports/evaluation/mmlu_150_suite.json`](../reports/evaluation/mmlu_150_suite.json). Para repetir a avaliação com as mesmas perguntas e exemplos:
+A suíte final está preservada em [`reports/evaluation/mmlu_150_suite.json`](../reports/evaluation/mmlu_150_suite.json). Para repetir a avaliação com as mesmas perguntas e exemplos:
 
 ```sh
 mkdir -p data/processed
