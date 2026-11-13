@@ -1,0 +1,12 @@
+{
+  "dry_run": false,
+  "train_rows": 7000,
+  "runtime_seconds": 1656.3714272380003,
+  "train_result": {
+    "train_runtime": 1653.8881,
+    "train_samples_per_second": 8.465,
+    "train_steps_per_second": 0.53,
+    "total_flos": 8.017296161931264e+16,
+    "train_loss": 0.16849406165619418
+  }
+}

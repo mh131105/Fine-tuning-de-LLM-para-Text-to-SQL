@@ -1,0 +1,7 @@
+{
+  "num_rows": 7000,
+  "first_row": {
+    "prompt": "You are a Text-to-SQL assistant. Generate one SQLite query that answers the question. Use only the provided schema. Return only SQL, with no markdown and no explanation.\n\nFinal task:\nSchema:\nDatabase: department_management\nTable department columns: Department_ID number primary key, Name text, Creation text, Ranking number, Budget_in_Billions number, Num_Employees number\nTable head columns: head_ID number primary key, name text, born_state text, age number\nTable management columns: department_ID number primary key, head_ID number, temporary_acting text\nForeign keys:\n- management.head_ID -> head.head_ID\n- management.department_ID -> department.Department_ID\nQuestion: How many heads of the departments are older than 56 ?\nSQL:",
+    "completion": " SELECT count(*) FROM head WHERE age  >  56<|im_end|>"
+  }
+}

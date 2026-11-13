@@ -1,0 +1,40 @@
+{
+  "spider": {
+    "execution_accuracy": 0.6818181818181818,
+    "total": 1034,
+    "correct": 705,
+    "failed": 329,
+    "error_breakdown": {
+      "result_mismatch": 244,
+      "execution_error": 85
+    }
+  },
+  "mmlu": {
+    "accuracy": 0.5733333333333334,
+    "total": 150,
+    "correct": 86,
+    "by_category": {
+      "STEM": {
+        "total": 50,
+        "correct": 29,
+        "accuracy": 0.58
+      },
+      "Humanidades": {
+        "total": 50,
+        "correct": 32,
+        "accuracy": 0.64
+      },
+      "Sociais": {
+        "total": 50,
+        "correct": 25,
+        "accuracy": 0.5
+      }
+    }
+  },
+  "delta_vs_base": {
+    "spider_accuracy_delta": 0.08607350096711797,
+    "mmlu_accuracy_delta": 0.0,
+    "mmlu_accuracy_percent_delta": 0.0,
+    "baseline_dir": "outputs/base"
+  }
+}

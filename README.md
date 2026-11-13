@@ -1,374 +1,99 @@
-# TP2 NLP - Fine-Tuning Text-to-SQL
+# Fine-tuning de LLM para Text-to-SQL
 
-Pipeline reprodutivel para avaliar especializacao em Text-to-SQL com Spider e possivel perda de capacidade geral em MMLU apos fine-tuning LoRA/QLoRA do `Qwen/Qwen2.5-3B-Instruct`.
+[**Adapter no Hugging Face**](https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f) · [Relatório final](reports/relatorio_final.pdf) · [Experimentos](docs/experimentos.md) · [Reproduzir](docs/reproducao.md)
 
-O repositorio foi desenhado para rodar localmente e no Google Colab sem caminhos fixos. Treino e inferencia reais baixam modelo grande e devem ser executados por voce em GPU.
+**Quanto ganho em Text-to-SQL consigo obter com LoRA e qual é o custo observado em uma avaliação auxiliar de conhecimento geral?** Investiguei essa pergunta com o `Qwen/Qwen2.5-3B-Instruct`, o Spider e uma suíte fixa de 150 questões do MMLU. Preparei os dados, implementei o pipeline de treinamento e avaliação e comparei oito configurações LoRA com o modelo-base.
 
-## O que o projeto faz
+O trabalho faz parte do TP2 de NLP da Universidade Federal do Amazonas, disciplinas ICC220 / PPGINF528, semestre 2026/01.
 
-- prepara Spider train/dev e schemas de bancos SQLite;
-- prepara uma suite fixa de MMLU com 150 questoes;
-- avalia modelo base em Spider dev por Execution Accuracy;
-- treina dois experimentos LoRA/QLoRA no Spider train;
-- avalia modelos fine-tuned em Spider dev e MMLU;
-- calcula ganho no Spider e variacao no MMLU contra baseline;
-- salva predicoes JSONL, metricas JSON, logs, ambiente e summaries Markdown;
-- inclui testes unitarios, testes com mocks e smoke tests leves.
+## Resultados e escolha do adapter
 
-## Estrutura
+Escolhi o **Exp F** como compromisso: obtive **68,18% no Spider dev**, ganho de **8,61 pontos percentuais** sobre a base, e mantive os mesmos **86 acertos em 150 questões** na suíte MMLU. O **Exp G** alcançou o maior resultado Spider, com seis acertos a mais que F, e acertou uma questão MMLU a menos.
 
-```text
-configs/             YAMLs de treino e avaliacao
-custom_metrics/      ExecutionAccuracy compativel com DeepEval
-scripts/             CLIs publicas
-src/                logica principal
-tests/               unitarios e smoke tests com mocks
-notebooks/           runner Colab sem logica exclusiva
-data/                dados locais ignorados pelo Git
-outputs/             resultados locais ignorados pelo Git
-reports/             notas para o relatorio final
+| Modelo | Spider: execução local | Corretas | Ganho sobre a base | MMLU 150 | Corretas |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Qwen2.5-3B-Instruct, base | 59,57% | 616/1034 | — | 57,33% | 86/150 |
+| **Exp F, adapter escolhido** | **68,18%** | **705/1034** | **+8,61 p.p.** | **57,33%** | **86/150** |
+| Exp G, maior resultado Spider | 68,76% | 711/1034 | +9,19 p.p. | 56,67% | 85/150 |
+
+Todos os adapters A–H superaram a base no Spider; os ganhos variaram de 6,58 a 9,19 p.p. As diferenças entre os adapters foram menores que o ganho sobre a base. Usei o próprio Spider dev para comparar as configurações e orientar a escolha, portanto esses números não são uma estimativa em teste independente após a seleção.
+
+![Comparação das acurácias Spider e MMLU](reports/figures/fig1_accuracy.png)
+
+Na [análise dos experimentos](docs/experimentos.md), apresento a tabela completa, as comparações de hiperparâmetros e os erros observados. Preservei o [relatório original](reports/relatorio_final.pdf), as [evidências de avaliação](reports/evaluation/) e a [execução histórica do Colab](notebooks/archive/colab_runner_executed.ipynb). A [revisão técnica](docs/revisao-tecnica.md) distingue o que conferi nos artefatos do que consta apenas no relatório ou no notebook.
+
+## O que fiz e o que aprendi
+
+- Implementei CLIs para preparar Spider e MMLU, treinar adapters e avaliar a base e os modelos ajustados com o mesmo protocolo.
+- Comparei módulos `q/v` e `q/k/v/o`, learning rates `1e-4` e `2e-4` e treinos de uma a três épocas. No Exp F, usei `q/k/v/o`, `2e-4` e duas épocas.
+- Treinei com loss apenas na SQL esperada, usando uma máscara explícita de completion e o EOS `<|im_end|>`. Na A100, usei BF16 sem quantização, microbatch 2 e acumulação 8, mantendo batch efetivo 16.
+- Separei redução da loss de treino de melhora na avaliação. O Exp H teve a menor loss, mas não liderou Spider nem MMLU. Também não encontrei um efeito universal de adaptar mais módulos.
+
+O resultado sustenta ganho na tarefa-alvo nas condições avaliadas. O empate agregado de F com a base no MMLU envolve trocas de acertos entre questões e não demonstra preservação de toda a capacidade geral.
+
+## Dados, método e alcance das métricas
+
+Usei **Spider train** para fine-tuning e para os três exemplos few-shot da avaliação. Avaliei nos **1034 exemplos de Spider dev**, com o esquema do banco no prompt e geração greedy. Os exemplos de avaliação não entram no treinamento supervisionado. As configurações finais compartilham seed 42, rank 16, alpha 32 e dropout 0,05.
+
+A métrica [ExecutionAccuracy](custom_metrics/execution_accuracy.py) extrai a SQL da resposta e executa previsão e referência no SQLite correspondente, em modo de leitura. Compara as tuplas resultantes, ignora a ordem das linhas quando nenhuma consulta contém `ORDER BY` e preserva a ordem das colunas. Erros de extração, execução ou resultados diferentes recebem zero. **Esta é a implementação local de execução; não é o avaliador oficial de Test Suite Accuracy do Spider.**
+
+Para o MMLU, usei 50 questões de cada subcategoria: `college_computer_science`, `philosophy` e `econometrics`, com cinco exemplos por subcategoria. A [suíte persistida](reports/evaluation/mmlu_150_suite.json) mantém as mesmas questões e exemplos entre os modelos. **MMLU 150 descreve esse recorte de três subcategorias, não o benchmark completo.** Uma questão corresponde a 0,67 p.p.; diferenças de poucos itens oferecem pouca resolução para ordenar capacidade geral.
+
+## Usar o adapter
+
+O artefato é um **adapter LoRA/PEFT**, que precisa do modelo-base `Qwen/Qwen2.5-3B-Instruct`. Ele não contém uma cópia completa dos pesos da base. A licença Qwen Research restringe o uso a fins não comerciais; consulte a [model card](https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f). **Built with Qwen.**
+
+Na raiz do repositório, em um ambiente Python com memória suficiente para a base de 3B:
+
+```sh
+python -m pip install -r requirements-inference.txt
+python examples/infer_exp_f.py \
+  --adapter mh131105/qwen2.5-3b-text-to-sql-lora-exp-f
 ```
 
-## Instalacao
+O exemplo carrega a base e o adapter e gera SQL para uma pergunta e um esquema pequenos. Para fixar o artefato, use `--revision` com o commit do Hub; `--device cuda`, `--device mps` ou `--device cpu` escolhe o dispositivo. A demonstração de inferência não substitui a avaliação Spider com três exemplos few-shot. Os detalhes de validação do upload ficam em [publicação](docs/publicacao.md).
 
-Recomendado: Python 3.10 a 3.12 no Colab.
+## Caminho mínimo para reproduzir
 
-```bash
-pip install -r requirements.txt
-```
+O ambiente do experimento foi Google Colab com A100 de 40 GB. O [notebook atual](notebooks/colab_runner.ipynb) executa as mesmas CLIs abaixo. As versões e os passos para obter os dados e restaurar o adapter estão em [reprodução](docs/reproducao.md).
 
-No Colab, o `requirements.txt` nao fixa `torch`: ele usa a versao CUDA/PyTorch ja
-fornecida pelo runtime para evitar conflito com `torchvision` e drivers. Se voce
-instalou uma versao anterior deste arquivo e viu conflitos de `numpy`, `pandas`,
-`protobuf` ou `torch`, reinicie o runtime antes de seguir.
-
-Se o treino falhar com `Found an incompatible version of torchao`, atualize o
-codigo e reinstale as dependencias:
-
-```bash
-git pull origin main
-pip install -r requirements.txt
-```
-
-Como alternativa emergencial no Colab, remova o pacote incompatível:
-
-```bash
-pip uninstall -y torchao
-```
-
-As configs principais de LoRA estao ajustadas para Colab A100, priorizando
-estabilidade com batch efetivo alto. Elas usam microbatch 2, acumulacao 8, sequencia
-2048 e batch efetivo 16, sem quantizacao 4-bit e sem FlashAttention:
-
-```yaml
-profile: a100
-attn_implementation: sdpa
-torch_dtype: bf16
-per_device_train_batch_size: 2
-gradient_accumulation_steps: 8
-effective_batch_size: 16
-max_seq_length: 2048
-completion_only_loss: true
-eos_token: "<|im_end|>"
-optim: adamw_torch_fused
-tf32: true
-gradient_checkpointing: false
-```
-
-Se a A100 ainda acusar OOM, ative `gradient_checkpointing: true` mantendo o
-batch efetivo 16, ou reduza temporariamente o batch efetivo para 8.
-
-## Dados
-
-O comando de preparo do Spider agora tem uma camada de ingestao. Se `data/raw/spider`
-ja existir, ele usa essa pasta. Caso contrario, ele pode importar de um diretorio,
-de um ZIP/TAR ou tentar baixar de um dataset Hugging Face configuravel.
-
-Estrutura final esperada:
-
-```text
-data/raw/spider/
-├── train_spider.json
-├── dev.json
-├── tables.json
-└── database/<db_id>/<db_id>.sqlite
-```
-
-O MMLU e baixado via Hugging Face Datasets por `scripts.prepare_mmlu`.
-
-## Comandos principais
-
-Preparar Spider com aquisicao automatica:
-
-```bash
-python -m scripts.prepare_spider --data_dir data/raw/spider --output_dir data/processed/spider
-```
-
-Importar Spider de um ZIP ou pasta do Drive/local:
-
-```bash
+```sh
+git clone --branch pipeline --single-branch \
+  https://github.com/mh131105/Fine-tuning-de-LLM-para-Text-to-SQL.git
+cd Fine-tuning-de-LLM-para-Text-to-SQL
+python -m pip install -r requirements.txt
 python -m scripts.prepare_spider \
-  --data_dir data/raw/spider \
-  --output_dir data/processed/spider \
-  --source_path /content/drive/MyDrive/spider.zip
-```
-
-Forcar download via Hugging Face:
-
-```bash
-python -m scripts.prepare_spider \
-  --data_dir data/raw/spider \
-  --output_dir data/processed/spider \
-  --source hf \
-  --hf_repo dreamerdeo/multispider
-```
-
-Preparar MMLU 150:
-
-```bash
-python -m scripts.prepare_mmlu --config configs/eval.yaml
-```
-
-Treinar Experimento A:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_a.yaml
-```
-
-Treinar Experimento B:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_b.yaml
-```
-
-Treinar Experimento C:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_c.yaml
-```
-
-Treinar Experimento D, diagnostico de LR mais alto:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_d.yaml
-```
-
-Treinar Experimento E, mesmo A com 2 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_e.yaml
-```
-
-Treinar Experimento F, mesmo D com 2 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_f.yaml
-```
-
-Treinar Experimento G, mesmo C com 3 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_g.yaml
-```
-
-Treinar Experimento H, mesmo F com 3 epocas:
-
-```bash
-python -m scripts.train --config configs/train_lora_exp_h.yaml
-```
-
-Treinar todos os experimentos A/B/C/D:
-
-```bash
-make train-all
-```
-
-Treinar somente os experimentos extras E/F:
-
-```bash
-make train-extra
-```
-
-Treinar somente os experimentos de 3 epocas G/H:
-
-```bash
-make train-3epoch
-```
-
-Ao reexecutar um experimento no mesmo runtime, remova ou mova o diretorio
-`outputs/<exp>` antigo antes do treino para evitar misturar checkpoints e
-metricas de configuracoes anteriores.
-
-Avaliar baseline:
-
-```bash
+  --data_dir data/raw/spider --output_dir data/processed/spider
+mkdir -p data/processed
+cp reports/evaluation/mmlu_150_suite.json data/processed/mmlu_150_suite.json
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base
-```
-
-Avaliar Exp A:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_a
-```
-
-Avaliar Exp B:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_b
-```
-
-Avaliar Exp C:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_c
-```
-
-Avaliar Exp D:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_d
-```
-
-Avaliar Exp E:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_e
-```
-
-Avaliar Exp F:
-
-```bash
+python -m scripts.train --config configs/train_lora_exp_f.yaml
 python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_f
 ```
 
-Avaliar Exp G:
+Esse caminho treina F novamente. Para avaliar o adapter já publicado, siga a alternativa de download em [reprodução](docs/reproducao.md). Para conferir o código sem baixar o Qwen, execute `python -m pytest`; os testes usam casos pequenos e mocks, sem validar as acurácias experimentais.
 
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_g
-```
+## Limitações
 
-Avaliar Exp H:
+- Avaliei um modelo-base, uma seed e um conjunto limitado de configurações. Usei Spider dev na seleção; não reservei outro conjunto para medir o desempenho da escolha final.
+- A suíte MMLU tem 150 questões em três subcategorias. Igualar a média da base nesse recorte não comprova ausência de regressões em outras tarefas.
+- A comparação por execução depende do conteúdo de cada banco. Ela pode considerar iguais consultas que coincidem nessa instância e penaliza troca de colunas, mesmo quando a agregação pretendida parece equivalente.
+- Spider e MMLU são públicos. Não consigo excluir exposição do modelo-base a esses dados no pré-treino.
+- Permaneceram erros de ligação entre pergunta e esquema e consultas executáveis com resultados incorretos. A geração de SQL não dispensa revisão antes de uso em um banco real.
 
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/exp_h
-```
+## Organização, autoria e licenças
 
-Diagnostico Spider sem `stop_sequences` para investigar saidas vazias do Exp C:
+| Caminho | Conteúdo |
+| --- | --- |
+| [`reports/`](reports/) | Relatório final, figuras e evidências preservadas. |
+| [`docs/`](docs/) | Experimentos, reprodução, revisão técnica e publicação. |
+| [`configs/`](configs/) | Configurações A–H, avaliação e alternativas identificadas como exploratórias. |
+| [`src/`](src/), [`scripts/`](scripts/) e [`custom_metrics/`](custom_metrics/) | Implementação, CLIs e métrica de execução. |
+| [`examples/`](examples/) | Exemplo de inferência com o adapter. |
+| [`notebooks/`](notebooks/) | Runner atual e execução histórica arquivada. |
+| [`data/`](data/) e [`outputs/`](outputs/) | Dados e saídas de runtime, fora do Git, com documentação própria. |
+| [`tests/`](tests/) | Testes de preparação, prompts, extração, execução e encadeamento. |
 
-```bash
-python -m scripts.evaluate_spider \
-  --config configs/eval_spider_nostop.yaml \
-  --model_path outputs/exp_c \
-  --output_dir outputs/diagnostics/exp_c_spider_nostop
-```
+Sou Matheus Garcia, autor identificado no relatório e no histórico do projeto. Nesta revisão de apresentação e disponibilização dos artefatos, usei assistência do Codex para conferir evidências, revisar a documentação e preparar a publicação. Essa declaração descreve a revisão atual; não atribui retroativamente às ferramentas a execução dos experimentos originais.
 
-Avaliar o primeiro checkpoint salvo do Exp C, que corresponde ao fim da primeira
-epoca:
-
-```bash
-EXP_C_EPOCH1_CKPT="$(ls -d outputs/exp_c/checkpoint-* | sort -V | head -n 1)"
-python -m scripts.evaluate_spider \
-  --config configs/eval_spider_nostop.yaml \
-  --model_path "$EXP_C_EPOCH1_CKPT" \
-  --output_dir outputs/diagnostics/exp_c_epoch1_spider_nostop
-```
-
-As avaliacoes usam `eval_batch_size` independente do treino. A configuracao padrao
-usa batch 16 para Spider e batch 64 para MMLU em `configs/eval.yaml`; se a GPU
-continuar com folga, esses valores podem ser aumentados, e se houver OOM basta
-reduzi-los.
-
-## Smoke tests sem modelo grande
-
-Esses comandos nao baixam Qwen nem treinam LoRA.
-
-```bash
-python -m pytest
-python -m scripts.prepare_mmlu --config configs/eval.yaml --mock --limit_per_category 2
-```
-
-Tambem existe `--mock` nos avaliadores para testes locais de formato:
-
-```bash
-python -m scripts.run_benchmarks --config configs/eval.yaml --model_path outputs/base --mock --limit 2
-```
-
-Esse modo usa as respostas gold como saida do "modelo" e serve apenas para validar IO, metricas e summaries.
-
-## Configuracoes
-
-- `configs/eval.yaml`: paths, Spider dev, MMLU 150, geracao deterministica, batch de avaliacao e SQLite timeout.
-- `configs/eval_spider_nostop.yaml`: diagnostico Spider sem `stop_sequences`, para separar erro real de EOS/stopping de corte prematuro da saida.
-- `configs/train_lora_exp_a.yaml`: LoRA leve, `q_proj/v_proj`, LR `1e-4`, 1 epoca.
-- `configs/train_lora_exp_b.yaml`: LoRA medio, `q_proj/k_proj/v_proj/o_proj`, LR `1e-4`, 1 epoca.
-- `configs/train_lora_exp_c.yaml`: mesmo Exp B com 2 epocas para medir efeito da segunda epoca.
-- `configs/train_lora_exp_d.yaml`: mesmo Exp B com LR `2e-4`, para testar se `1e-4` foi conservador.
-- `configs/train_lora_exp_e.yaml`: mesmo Exp A com 2 epocas, para medir efeito da segunda epoca em `q_proj/v_proj`.
-- `configs/train_lora_exp_f.yaml`: mesmo Exp D com 2 epocas, para medir efeito da segunda epoca com LR `2e-4`.
-- `configs/train_lora_exp_g.yaml`: mesmo Exp C com 3 epocas, LR `1e-4`.
-- `configs/train_lora_exp_h.yaml`: mesmo Exp F com 3 epocas, LR `2e-4`.
-- `configs/train_qlora_t4_template.yaml`: fallback T4 com QLoRA 4-bit.
-
-Todas as configs usam paths relativos.
-
-O dataset de treino e montado em formato `prompt` + `completion`, nao em um
-campo unico `text`. Com `completion_only_loss: true`, o TRL calcula a loss
-apenas nos tokens da SQL esperada. A completion recebe o EOS do Qwen
-`<|im_end|>` para ensinar o modelo a parar depois da query. Antes de chamar o
-`SFTTrainer`, o projeto tokeniza esses campos e cria `completion_mask`
-explicitamente, evitando desalinhamento na fronteira `prompt`/`completion`.
-
-## Artefatos esperados
-
-Depois de cada benchmark:
-
-```text
-outputs/<exp>/
-├── environment.json
-├── spider_predictions.jsonl
-├── spider_metrics.json
-├── mmlu_predictions.jsonl
-├── mmlu_metrics.json
-├── benchmark_summary.json
-└── summary.md
-```
-
-Depois de cada treino:
-
-```text
-outputs/<exp>/
-├── adapter/
-├── tokenizer/
-├── training_config.yaml
-├── train_logs.json
-├── dataset_preview.json
-└── environment.json
-```
-
-## Metrica Spider
-
-`custom_metrics.ExecutionAccuracy` herda de `deepeval.metrics.BaseMetric` quando DeepEval esta instalado. A metrica:
-
-- extrai SQL de markdown e texto extra;
-- corta continuacoes de prompt como `Example`, `Schema`, `Question`, `SQL`,
-  `Output: SQL`, `Task completed. SQL` e `Explanation`, inclusive quando a
-  continuacao aparece na mesma linha;
-- aceita apenas `SELECT` ou `WITH`;
-- bloqueia comandos destrutivos;
-- executa SQL prevista e gold no SQLite em modo read-only;
-- le texto SQLite como bytes para evitar falhas de UTF-8 do banco serem
-  confundidas com erro de SQL do modelo;
-- compara resultados ignorando ordem quando nao ha `ORDER BY`;
-- preserva ordem quando ha `ORDER BY`;
-- retorna `1.0` ou `0.0` e registra `error_type`.
-
-## Colab
-
-Abra `notebooks/colab_runner.ipynb`. O notebook apenas clona/entra no repositorio, instala dependencias e executa os comandos acima. A logica fica nos modulos e scripts do repositorio.
-
-## Observacoes operacionais
-
-- Nao commite `data/raw`, `data/processed`, `outputs`, tokens ou `.env`.
-- Use `HF_TOKEN` no ambiente se o Hugging Face Hub exigir autenticacao.
-- A avaliacao final deve usar Spider dev completo e MMLU 150 completo.
-- O treino real depende de GPU, VRAM, download do modelo e datasets completos.
+O [código usa licença MIT](LICENSE). O modelo-base e o adapter seguem as condições Qwen Research, com uso não comercial. Spider, MMLU e as bibliotecas mantêm suas licenças e atribuições próprias, detalhadas na [documentação da publicação](docs/publicacao.md).

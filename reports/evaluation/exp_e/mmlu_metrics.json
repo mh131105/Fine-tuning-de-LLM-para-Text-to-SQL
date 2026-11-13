@@ -1,0 +1,22 @@
+{
+  "accuracy": 0.56,
+  "total": 150,
+  "correct": 84,
+  "by_category": {
+    "STEM": {
+      "total": 50,
+      "correct": 30,
+      "accuracy": 0.6
+    },
+    "Humanidades": {
+      "total": 50,
+      "correct": 28,
+      "accuracy": 0.56
+    },
+    "Sociais": {
+      "total": 50,
+      "correct": 26,
+      "accuracy": 0.52
+    }
+  }
+}
