@@ -1,0 +1,11 @@
+{
+  "repo_id": "mh131105/qwen2.5-3b-text-to-sql-lora-exp-f",
+  "commit": "7ed0a9d2531a74c3d63e35f1e273ee1199889e26",
+  "commit_url": "https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f/commit/7ed0a9d2531a74c3d63e35f1e273ee1199889e26",
+  "url": "https://huggingface.co/mh131105/qwen2.5-3b-text-to-sql-lora-exp-f",
+  "download_without_auth": true,
+  "all_manifest_files_verified": 18,
+  "adapter_tensor_count": 288,
+  "adapter_parameters": 7372800,
+  "hub_files": 20
+}

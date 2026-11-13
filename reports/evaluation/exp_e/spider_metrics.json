@@ -1,0 +1,11 @@
+{
+  "execution_accuracy": 0.6682785299806576,
+  "total": 1034,
+  "correct": 691,
+  "failed": 343,
+  "error_breakdown": {
+    "result_mismatch": 219,
+    "execution_error": 123,
+    "sql_extraction_error": 1
+  }
+}

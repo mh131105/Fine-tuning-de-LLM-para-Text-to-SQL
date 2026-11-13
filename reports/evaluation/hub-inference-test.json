@@ -1,0 +1,29 @@
+{
+  "adapter_repo": "mh131105/qwen2.5-3b-text-to-sql-lora-exp-f",
+  "adapter_commit": "7ed0a9d2531a74c3d63e35f1e273ee1199889e26",
+  "base_model": "Qwen/Qwen2.5-3B-Instruct",
+  "base_revision_for_this_test": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+  "device": "mps",
+  "dtype": "float16",
+  "python": "3.12.12",
+  "torch": "2.11.0",
+  "transformers": "4.57.6",
+  "peft": "0.19.1",
+  "schema": "singer(singer_id, name, country)",
+  "question": "How many singers are there?",
+  "few_shot_count": 0,
+  "generated_sql": "SELECT count(*) FROM singer",
+  "toy_rows": [
+    [
+      3
+    ]
+  ],
+  "expected_rows": [
+    [
+      3
+    ]
+  ],
+  "status": "passed",
+  "scope": "Functional loading and inference check; not a repeat of Spider or MMLU benchmarks.",
+  "tested_on": "2026-11-13"
+}

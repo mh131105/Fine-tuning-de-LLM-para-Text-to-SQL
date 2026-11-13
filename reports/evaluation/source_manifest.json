@@ -1,0 +1,242 @@
+{
+  "sources": [
+    {
+      "archive": "exp_e-20260612T032941Z-3-001.zip",
+      "archive_size": 107070795,
+      "archive_sha256": "95a390ea6f8e45ec1c773bbceb85b9d24432c0b4e24ec85fce2e50c435c6aaca",
+      "files": [
+        {
+          "member": "exp_e/dataset_preview.json",
+          "size": 881,
+          "sha256": "91217334d3d9538a6820ab685da6c891fd3cf1e615b65e6a9e896f021db00202"
+        },
+        {
+          "member": "exp_e/summary.md",
+          "size": 421,
+          "sha256": "ad359dbae7a16b27d08695ed2493a5a002491efd471d5b98e1b5aab1df8d67ff"
+        },
+        {
+          "member": "exp_e/mmlu_metrics.json",
+          "size": 340,
+          "sha256": "d25207fb00081668c9f7c3180fcdfc774d096a31092637aa37676ad81cae24af"
+        },
+        {
+          "member": "exp_e/environment.json",
+          "size": 536,
+          "sha256": "c446e6d49e1a2f4e13fe841eee873da2f71032cc21de3a2ced03cc265a7655e4"
+        },
+        {
+          "member": "exp_e/train_logs.json",
+          "size": 297,
+          "sha256": "43edae486b377586f7f4f1221f6c2b5eef58f57a18e28b4c09aadc5a88e7156e"
+        },
+        {
+          "member": "exp_e/benchmark_summary.json",
+          "size": 859,
+          "sha256": "5b072f1a95d29e4d3b71d0e08e2720208b197b05cae79f3bd74dc9ab92b05d25"
+        },
+        {
+          "member": "exp_e/spider_predictions.jsonl",
+          "size": 748363,
+          "sha256": "7399f0d960dec7681fcc3609a14e40cb6ea1093c37a3ff3e594b77fe8d36ba19"
+        },
+        {
+          "member": "exp_e/training_config.yaml",
+          "size": 1137,
+          "sha256": "33b858704de2291767454e52efd2243904119adf3eeb124a2b5177b0665ab527"
+        },
+        {
+          "member": "exp_e/spider_metrics.json",
+          "size": 213,
+          "sha256": "c6b6fe6ae68e825f46ea316d3f575fc5c82838a34fc1a56b30c2cfbd7fbd6a48"
+        },
+        {
+          "member": "exp_e/mmlu_predictions.jsonl",
+          "size": 51430,
+          "sha256": "83445b2dea1982c127cedf717a048f2f3087242a260b8152e011b11944bb3c2c"
+        }
+      ]
+    },
+    {
+      "archive": "exp_f-20260612T032941Z-3-001.zip",
+      "archive_size": 85721643,
+      "archive_sha256": "4aa6398ed628ce2b8fe50f2eff2140faff0e81534a95f5d61c64b9745ee58cbd",
+      "files": [
+        {
+          "member": "exp_f/spider_metrics.json",
+          "size": 181,
+          "sha256": "22da95c0beca46c64e781158528975c8ecc2af289c8fdd83a8aac7e62217d363"
+        },
+        {
+          "member": "exp_f/dataset_preview.json",
+          "size": 881,
+          "sha256": "91217334d3d9538a6820ab685da6c891fd3cf1e615b65e6a9e896f021db00202"
+        },
+        {
+          "member": "exp_f/mmlu_metrics.json",
+          "size": 354,
+          "sha256": "01c6e9301e0d408edfa583bea42014934ce537c897f0f76fdb1322be1e782818"
+        },
+        {
+          "member": "exp_f/environment.json",
+          "size": 536,
+          "sha256": "454c913c14c083f81fbc088e66523d1cfd62a127cf3499716819b4922bf317fd"
+        },
+        {
+          "member": "exp_f/benchmark_summary.json",
+          "size": 805,
+          "sha256": "97ffa5d1cd840a27e1c280300d828588bffea4c977a4b017cbce1e27ec32fa15"
+        },
+        {
+          "member": "exp_f/summary.md",
+          "size": 421,
+          "sha256": "dd9443e51813be5cedbcba1fcf9ebd4f2a6796807e14456622f08f2ffb8072f5"
+        },
+        {
+          "member": "exp_f/training_config.yaml",
+          "size": 1165,
+          "sha256": "ffc6575c91cefdbd7341d830326cf3491b539ef802300b54c6e6dff5f54fa01a"
+        },
+        {
+          "member": "exp_f/train_logs.json",
+          "size": 297,
+          "sha256": "489491ee1cafa984d214508c6613dbf0d630c85e8719b789533e47aaecf495e6"
+        },
+        {
+          "member": "exp_f/mmlu_predictions.jsonl",
+          "size": 51492,
+          "sha256": "b9c107a2c26dd8a979bf18a11fd0867ae47e9e20b6b120adf5e48696b74f7484"
+        },
+        {
+          "member": "exp_f/spider_predictions.jsonl",
+          "size": 759037,
+          "sha256": "4d96171df79a386fe267225ca24e499123631e484c5b3da96e18cfd8c49aa206"
+        }
+      ]
+    },
+    {
+      "archive": "exp_g-20260612T053227Z-3-001.zip",
+      "archive_size": 287400227,
+      "archive_sha256": "abb5fd23f784c856919b6ade0a1f0b75f9ffec40e3d514429ad7ab5d2fcf652f",
+      "files": [
+        {
+          "member": "exp_g/dataset_preview.json",
+          "size": 881,
+          "sha256": "91217334d3d9538a6820ab685da6c891fd3cf1e615b65e6a9e896f021db00202"
+        },
+        {
+          "member": "exp_g/benchmark_summary.json",
+          "size": 838,
+          "sha256": "9d37b7f7eb9a2f04b0741384f7a81f765dbc1f9e7d0c4bc1b271b74ad4e11cee"
+        },
+        {
+          "member": "exp_g/summary.md",
+          "size": 421,
+          "sha256": "95e63f998663cb0b258ec35fe08ee5d734a94b1eeed0e14894886853cc80cf14"
+        },
+        {
+          "member": "exp_g/environment.json",
+          "size": 536,
+          "sha256": "34e19e4bbf5e26db4c077e3a7c4478c2e58cf9a502bacfa114a8fe7662b251ff"
+        },
+        {
+          "member": "exp_g/mmlu_predictions.jsonl",
+          "size": 51365,
+          "sha256": "6f8a30cfa93fa5ca40272b1bf1f66ada1b2d595daa245a0ae54f6a4b162ee065"
+        },
+        {
+          "member": "exp_g/train_logs.json",
+          "size": 297,
+          "sha256": "5cbcb75a06a60a999401d48e2c3cd82dabeb2c667b46aa9bd328fd69e8dd2d84"
+        },
+        {
+          "member": "exp_g/training_config.yaml",
+          "size": 1165,
+          "sha256": "107142de9f0514f4d00da6ab206b232da71ca8708e6068855bd1bef9278234c8"
+        },
+        {
+          "member": "exp_g/spider_metrics.json",
+          "size": 181,
+          "sha256": "ac13b9f049edb9476acfbca6fb1821b6c675c2e7a5c2a6e7489e843a5a4c221c"
+        },
+        {
+          "member": "exp_g/mmlu_metrics.json",
+          "size": 355,
+          "sha256": "0597497c48167d68f36202171ba93a610de6c2511f48b89390b0e7b9789ea3e2"
+        },
+        {
+          "member": "exp_g/spider_predictions.jsonl",
+          "size": 747994,
+          "sha256": "603edd07b091bd98eed4d9eb43089d72047727e3cb665d6d48047c37f0ea19c4"
+        }
+      ]
+    },
+    {
+      "archive": "exp_h-20260612T053227Z-3-001.zip",
+      "archive_size": 287293916,
+      "archive_sha256": "02771143819a692d8974e45478614b02a7bc578a43e6b165690cf60a9ccfe365",
+      "files": [
+        {
+          "member": "exp_h/mmlu_predictions.jsonl",
+          "size": 51388,
+          "sha256": "6b9c9c98e2e80fb072492f342b117399b1823db3c85cc92b89f9d39625c1dec5"
+        },
+        {
+          "member": "exp_h/mmlu_metrics.json",
+          "size": 340,
+          "sha256": "645cecee8c12b9d89baeba81529c5e8030f3cd9cfce1a51ab7a1ea252a12ee1f"
+        },
+        {
+          "member": "exp_h/training_config.yaml",
+          "size": 1165,
+          "sha256": "dbcd25fae53746fe84298bc272f58c43896d33cfbccc3396a6c61936d064215d"
+        },
+        {
+          "member": "exp_h/dataset_preview.json",
+          "size": 881,
+          "sha256": "91217334d3d9538a6820ab685da6c891fd3cf1e615b65e6a9e896f021db00202"
+        },
+        {
+          "member": "exp_h/benchmark_summary.json",
+          "size": 825,
+          "sha256": "828599fe5c6dba158c2aed2876aa467578f334b3450a3876513c45b8f139c817"
+        },
+        {
+          "member": "exp_h/environment.json",
+          "size": 536,
+          "sha256": "ad9f9e0859fc48be585d6c814e982737ac392863eef51ef3db808fd426d68046"
+        },
+        {
+          "member": "exp_h/summary.md",
+          "size": 421,
+          "sha256": "4526b4cc5c2e73aae3c2b8566bb042d23f19c7f6dae31445d3c32c7f92703496"
+        },
+        {
+          "member": "exp_h/spider_predictions.jsonl",
+          "size": 747146,
+          "sha256": "5674362c78fb9b244d887d334a981675a1576facc1683fc35390a010f76b4e40"
+        },
+        {
+          "member": "exp_h/spider_metrics.json",
+          "size": 181,
+          "sha256": "ed8ac98996a5b7eeec67a3dba2d2529c1e8525ed07256a2b724d3e1931f19a8a"
+        },
+        {
+          "member": "exp_h/train_logs.json",
+          "size": 298,
+          "sha256": "12cf1e54db9957726c11591acb21bcae72cb4700e481303cb7ef4cd834c913c6"
+        }
+      ]
+    }
+  ],
+  "mmlu_suite": {
+    "source": "Downloads/mmlu_150_suite.json",
+    "sha256": "2665fc9d8cb0e82099436ded1b22ec4bde3406901f0a0bd925123b100b380bd0",
+    "question_hash": "8fc4621bde8bba56f49b1d9d4e26d50777653a583b46120e82979ce321e8cc6b"
+  },
+  "notes": [
+    "E/F/G/H metrics match final report; A/B/C/D/base final raw prediction files were not found in local archives.",
+    "Older outputs-20260610/20260611 archives contain superseded runs and must not be substituted for final report results.",
+    "No exact base model revision was recorded in the saved training configuration or adapter configuration."
+  ]
+}

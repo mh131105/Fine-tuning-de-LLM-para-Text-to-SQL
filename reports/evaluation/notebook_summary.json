@@ -1,0 +1,395 @@
+{
+  "source_notebook": "notebooks/archive/colab_runner_executed.ipynb",
+  "source_sha256": "1e8d43b15319bcfc67b62cf1b26c9504ec066c26ebeb0c7becc2ba5f490c0ee8",
+  "results": {
+    "base": {
+      "cell_index": 11,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.5957446808510638,
+          "total": 1034,
+          "correct": 616,
+          "failed": 418,
+          "error_breakdown": {
+            "execution_error": 163,
+            "result_mismatch": 255
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.5733333333333334,
+          "total": 150,
+          "correct": 86,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 32,
+              "accuracy": 0.64
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 26,
+              "accuracy": 0.52
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.0,
+          "mmlu_accuracy_delta": 0.0,
+          "mmlu_accuracy_percent_delta": 0.0,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_a": {
+      "cell_index": 24,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6692456479690522,
+          "total": 1034,
+          "correct": 692,
+          "failed": 342,
+          "error_breakdown": {
+            "result_mismatch": 208,
+            "execution_error": 134
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.54,
+          "total": 150,
+          "correct": 81,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 29,
+              "accuracy": 0.58
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 27,
+              "accuracy": 0.54
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 25,
+              "accuracy": 0.5
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.07350096711798837,
+          "mmlu_accuracy_delta": -0.033333333333333326,
+          "mmlu_accuracy_percent_delta": -5.813953488372092,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_b": {
+      "cell_index": 25,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6615087040618955,
+          "total": 1034,
+          "correct": 684,
+          "failed": 350,
+          "error_breakdown": {
+            "result_mismatch": 218,
+            "execution_error": 132
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.5533333333333333,
+          "total": 150,
+          "correct": 83,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 32,
+              "accuracy": 0.64
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 26,
+              "accuracy": 0.52
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 25,
+              "accuracy": 0.5
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.06576402321083175,
+          "mmlu_accuracy_delta": -0.020000000000000018,
+          "mmlu_accuracy_percent_delta": -3.4883720930232585,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_c": {
+      "cell_index": 26,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6731141199226306,
+          "total": 1034,
+          "correct": 696,
+          "failed": 338,
+          "error_breakdown": {
+            "result_mismatch": 222,
+            "execution_error": 116
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.56,
+          "total": 150,
+          "correct": 84,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 30,
+              "accuracy": 0.6
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 26,
+              "accuracy": 0.52
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.07736943907156679,
+          "mmlu_accuracy_delta": -0.013333333333333308,
+          "mmlu_accuracy_percent_delta": -2.3255813953488325,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_d": {
+      "cell_index": 27,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6692456479690522,
+          "total": 1034,
+          "correct": 692,
+          "failed": 342,
+          "error_breakdown": {
+            "result_mismatch": 215,
+            "execution_error": 126,
+            "sql_extraction_error": 1
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.5666666666666667,
+          "total": 150,
+          "correct": 85,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 31,
+              "accuracy": 0.62
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 26,
+              "accuracy": 0.52
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.07350096711798837,
+          "mmlu_accuracy_delta": -0.00666666666666671,
+          "mmlu_accuracy_percent_delta": -1.162790697674426,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_e": {
+      "cell_index": 28,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6682785299806576,
+          "total": 1034,
+          "correct": 691,
+          "failed": 343,
+          "error_breakdown": {
+            "result_mismatch": 219,
+            "execution_error": 123,
+            "sql_extraction_error": 1
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.56,
+          "total": 150,
+          "correct": 84,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 30,
+              "accuracy": 0.6
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 26,
+              "accuracy": 0.52
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.07253384912959382,
+          "mmlu_accuracy_delta": -0.013333333333333308,
+          "mmlu_accuracy_percent_delta": -2.3255813953488325,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_f": {
+      "cell_index": 29,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6818181818181818,
+          "total": 1034,
+          "correct": 705,
+          "failed": 329,
+          "error_breakdown": {
+            "result_mismatch": 244,
+            "execution_error": 85
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.5733333333333334,
+          "total": 150,
+          "correct": 86,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 29,
+              "accuracy": 0.58
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 32,
+              "accuracy": 0.64
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 25,
+              "accuracy": 0.5
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.08607350096711797,
+          "mmlu_accuracy_delta": 0.0,
+          "mmlu_accuracy_percent_delta": 0.0,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_g": {
+      "cell_index": 30,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6876208897485493,
+          "total": 1034,
+          "correct": 711,
+          "failed": 323,
+          "error_breakdown": {
+            "result_mismatch": 228,
+            "execution_error": 95
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.5666666666666667,
+          "total": 150,
+          "correct": 85,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 29,
+              "accuracy": 0.58
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 29,
+              "accuracy": 0.58
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 27,
+              "accuracy": 0.54
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.09187620889748549,
+          "mmlu_accuracy_delta": -0.00666666666666671,
+          "mmlu_accuracy_percent_delta": -1.162790697674426,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    },
+    "exp_h": {
+      "cell_index": 31,
+      "summary": {
+        "spider": {
+          "execution_accuracy": 0.6856866537717602,
+          "total": 1034,
+          "correct": 709,
+          "failed": 325,
+          "error_breakdown": {
+            "result_mismatch": 249,
+            "execution_error": 76
+          }
+        },
+        "mmlu": {
+          "accuracy": 0.56,
+          "total": 150,
+          "correct": 84,
+          "by_category": {
+            "STEM": {
+              "total": 50,
+              "correct": 28,
+              "accuracy": 0.56
+            },
+            "Humanidades": {
+              "total": 50,
+              "correct": 31,
+              "accuracy": 0.62
+            },
+            "Sociais": {
+              "total": 50,
+              "correct": 25,
+              "accuracy": 0.5
+            }
+          }
+        },
+        "delta_vs_base": {
+          "spider_accuracy_delta": 0.08994197292069639,
+          "mmlu_accuracy_delta": -0.013333333333333308,
+          "mmlu_accuracy_percent_delta": -2.3255813953488325,
+          "baseline_dir": "outputs/base"
+        }
+      }
+    }
+  }
+}
