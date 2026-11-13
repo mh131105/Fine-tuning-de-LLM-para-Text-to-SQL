@@ -69,4 +69,4 @@ As configurações originais não fixam revisões imutáveis do modelo-base ou d
 
 ## Autoria e assistência
 
-O relatório identifica Matheus como autor. A revisão editorial, a organização dos materiais e a auditoria descritas neste documento tiveram assistência de um agente de IA. As fontes examinadas não oferecem uma divisão detalhada das contribuições anteriores entre pessoas e ferramentas. A documentação não atribui contribuições específicas sem registro que as sustente.
+O relatório identifica Matheus Henrique de Oliveira Garcia como autor. A revisão editorial, a organização dos materiais e a auditoria descritas neste documento tiveram assistência de um agente de IA. As fontes examinadas não oferecem uma divisão detalhada das contribuições anteriores entre pessoas e ferramentas. A documentação não atribui contribuições específicas sem registro que as sustente.
